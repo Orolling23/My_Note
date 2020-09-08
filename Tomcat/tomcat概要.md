@@ -15,43 +15,43 @@
 &emsp;Host代表一个虚拟域名，内部嵌套Context。  </br>
 &emsp;一个Wrapper对应一个Servlet，Context中有多个Wrapper。  </br>
 &emsp;我们再次提起Container，这里以上提到的Engine，Host，Context，Wrapper均继承自Container。  </br>
-    再抽象一层，我们需要管理所有组件，包括Server和Service的生命周期，我们就让所有的组件都实现一个管理生命周期的接口，称之为LifeCycle。  </br>
-    从Engine到Host，再到Context，再到Wrapper，都维护了一个Pipeline，有基础Valve，其层级之间通过PipeLline连接，并可以通过Valve对请求处理进行扩展（比如密码校验等）。这里叫做责任链模式。  </br>
-    接下来我们再看Connector的设计，连接器完成的任务有  </br>
-        1，监听端口，读取请求  </br>
-        2，将请求数据按照指定协议解析  </br>
-        3，根据请求地址匹配正确的容器进行处理  </br>
-        4，容器处理完成后，将响应返回客户端  </br>
-    从这里我们可以看到，连接其需要判断不同的协议，还要选择不同的容器。这里Tomcat对其进行了解耦，设计了Endpoint作为IO，监听请求；Processor按照请求地址映射到容器进行处理（Mapper）。Tomcat通过适配器模式实现了Connector与Mapper、Container的解耦，默认为CoyoteAdapter。  </br>
-    为了解决并发问题，Tomcat设计了Executor作为可在组件间共享的线程池，实现了Lifecycle，可按照通用组件进行管理。Executor由Service维护，所以共享范围为同一个Service。  </br>
-    到这里Tomcat的基本结构就大概了解了。 </br>
+&emsp;再抽象一层，我们需要管理所有组件，包括Server和Service的生命周期，我们就让所有的组件都实现一个管理生命周期的接口，称之为LifeCycle。  </br>
+&emsp;从Engine到Host，再到Context，再到Wrapper，都维护了一个Pipeline，有基础Valve，其层级之间通过PipeLline连接，并可以通过Valve对请求处理进行扩展（比如密码校验等）。这里叫做责任链模式。  </br>
+&emsp;接下来我们再看Connector的设计，连接器完成的任务有  </br>
+&emsp;&emsp;1，监听端口，读取请求  </br>
+&emsp;&emsp;2，将请求数据按照指定协议解析  </br>
+&emsp;&emsp;3，根据请求地址匹配正确的容器进行处理  </br>
+&emsp;&emsp;4，容器处理完成后，将响应返回客户端  </br>
+&emsp;从这里我们可以看到，连接其需要判断不同的协议，还要选择不同的容器。这里Tomcat对其进行了解耦，设计了Endpoint作为IO，监听请求；Processor按照请求地址映射到容器进行处理（Mapper）。Tomcat通过适配器模式实现了Connector与Mapper、Container的解耦，默认为CoyoteAdapter。  </br>
+&emsp;为了解决并发问题，Tomcat设计了Executor作为可在组件间共享的线程池，实现了Lifecycle，可按照通用组件进行管理。Executor由Service维护，所以共享范围为同一个Service。  </br>
+&emsp;到这里Tomcat的基本结构就大概了解了。 </br>
 
 ## Tomcat初始化流程  
 ![Tomcat初始化流程](..//Pics/tomcat2.jpg)
-    Tomcat的主类在Bootstrap，初始化后进入Catalina类，在Catalina的load方法中的digester.parse(inputSource)中解析了配置文件，并初始化了Service（包括初始化了Connector、Endpoint等）。  
-    注意，各种组件的初始化都是由从Lifecycle继承来的initInternal方法在做，且都要在函数中调用super.initInterval()(实际上是LifecycleMBeanBase类中的此方法)，用来注册Bean。在Catalina中getServer并初始化和启动了它。这里StandardServer主要用来监听Stop命令，真正的请求监听还是Endpoint在做。  
+&emsp;Tomcat的主类在Bootstrap，初始化后进入Catalina类，在Catalina的load方法中的digester.parse(inputSource)中解析了配置文件，并初始化了Service（包括初始化了Connector、Endpoint等）。  
+&emsp;注意，各种组件的初始化都是由从Lifecycle继承来的initInternal方法在做，且都要在函数中调用super.initInterval()(实际上是LifecycleMBeanBase类中的此方法)，用来注册Bean。在Catalina中getServer并初始化和启动了它。这里StandardServer主要用来监听Stop命令，真正的请求监听还是Endpoint在做。  
 
 ## 一次请求是如何被接收、处理、返回的，流程如何
 ![Tomcat初始化流程](../Pics/tomcat3.jpg)
 ## 如何处理并发请求的  
-​    Tomcat处理并发的手段是通过线程池。  
-​    各种组件被初始化之后,Lifecycle同样链式的调用了每个组件的startInternal()方法，其中包括Connector的，其中调用了protocalHandler的start方法，protocalHandler接口的实现类的start()被调用，并在其中调用了endpoint.start()方法，其中再调用了startIntenal方法，其实现类NioEndpoint在其startInternal()方法中实例化了一个东西叫Poller，这个东西看名字的意思，就知道他是从队列里面拉东西出来的。
-​    我们可以看到，Endpoint有三个实现类，分别是Apr，Nio（默认的），Nio2
-​        他们的区别是Apr是从操作系统级别解决异步IO；
-​                                Nio是利用了Java的NIO实现非阻塞IO
-​                                Nio2利用代码实现
+&emsp;Tomcat处理并发的手段是通过线程池。  
+&emsp;各种组件被初始化之后,Lifecycle同样链式的调用了每个组件的startInternal()方法，其中包括Connector的，其中调用了protocalHandler的start方法，protocalHandler接口的实现类的start()被调用，并在其中调用了endpoint.start()方法，其中再调用了startIntenal方法，其实现类NioEndpoint在其startInternal()方法中实例化了一个东西叫Poller，这个东西看名字的意思，就知道他是从队列里面拉东西出来的。
+&emsp;我们可以看到，Endpoint有三个实现类，分别是Apr，Nio（默认的），Nio2
+&emsp;他们的区别是Apr是从操作系统级别解决异步IO；
+&emsp;&emsp;&emsp;Nio是利用了Java的NIO实现非阻塞IO
+&emsp;&emsp;&emsp;Nio2利用代码实现
 
 > https://www.javadoop.com/post/tomcat-nio
 > https://juejin.im/post/6844903874122383374
 > 这两篇文章讲endpoint的细节讲的比较多，直接看文章+源码即可，这里重点说Poller。
 
-​      我们可以看到Poller是NioEndpoint的内部类，其实现了Runnable接口。在endpoint的startinternal方法中，有这么一段。
+&emsp;我们可以看到Poller是NioEndpoint的内部类，其实现了Runnable接口。在endpoint的startinternal方法中，有这么一段。
   ![Endpoint](../Pics/tomcat4.jpg)
-​    我们可以看到初始化了一个pollers数组，这里默认长度是2，然后为每个poller启动了一个单独的线程并开启。
-​    然后下面进入startAcceptorThreads方法，开启Acceptor。Poller是选择器，Acceptor是接收器。接收器不断接收请求，丢入Channel，channel和Poller绑定，Poller不断轮询里面有没有事件。这里应该知道了Poller要做的事情就是衔接请求接收和请求处理两个步骤，实际上poller会将channel中读出的字节流包装为NioSocketWrapper最终在processSocket中注册给Executor（线程池的接口），再丢给protocalProcessor解析，最后流转给Servlet。
-​    为什么这么设计？因为Acceptor只处理接受请求，接收到之后，要赶紧把他丢进Channel回头再去接收新的请求，同时生成新的SocketChannel，与下一个空闲的Poller register，再有新的Poller。由Poller接手下面的工作，这样不仅可以解耦，也可以让每个组件的工作更加专注，分离，效率更高。
+&emsp;我们可以看到初始化了一个pollers数组，这里默认长度是2，然后为每个poller启动了一个单独的线程并开启。
+&emsp;然后下面进入startAcceptorThreads方法，开启Acceptor。Poller是选择器，Acceptor是接收器。接收器不断接收请求，丢入Channel，channel和Poller绑定，Poller不断轮询里面有没有事件。这里应该知道了Poller要做的事情就是衔接请求接收和请求处理两个步骤，实际上poller会将channel中读出的字节流包装为NioSocketWrapper最终在processSocket中注册给Executor（线程池的接口），再丢给protocalProcessor解析，最后流转给Servlet。
+&emsp;为什么这么设计？因为Acceptor只处理接受请求，接收到之后，要赶紧把他丢进Channel回头再去接收新的请求，同时生成新的SocketChannel，与下一个空闲的Poller register，再有新的Poller。由Poller接手下面的工作，这样不仅可以解耦，也可以让每个组件的工作更加专注，分离，效率更高。
 
-​    (Poller这段代码其实没太看懂，消息过来之后怎么包装的，怎么往下传的。后面有时间了再回来debug这段仔细研究一下吧。)
+&emsp;(Poller这段代码其实没太看懂，消息过来之后怎么包装的，怎么往下传的。后面有时间了再回来debug这段仔细研究一下吧。)
 
 ## Servlet的原理、加载机制
 
