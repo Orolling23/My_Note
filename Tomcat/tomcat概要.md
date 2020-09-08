@@ -113,13 +113,111 @@
   以前Tomcat中所用的BIO时同步阻塞IO，对于每一个Socket，都要有一个线程专门处理，对于socket流要阻塞读。因为常常涉及线程开启和回收，所以一般会考虑线程池和连接池，维持一定数量的线程和连接，减少频繁调用系统接口的开销，也可以合理利用多线程来使用多核心CPU的资源。
   BIO的优点是，事情发生了才使用资源，对于并发量特别大的场景，BIO的效率其实比NIO要高，且更节省系统资源。缺点就是当并发量过高，达到数万，十万级以上，阻塞难以处理。且对于连接数目不大且相对固定的场景，BIO比NIO更加合适。
     
-  NIO是non-blocking I/O，非阻塞IO，在Tomcat实现中，读数据还是同步读，所以是同步非阻塞IO。下面来看一下Tomcat中的NIO是怎么实现的。
-  明天要解决的问题：Tomcat到底哪里算NIO？
-  
+  NIO是non-blocking I/O，非阻塞IO，在Tomcat实现中，读数据还是同步读，所以是同步非阻塞IO。在Tomcat8.5之后，BIO已经被完全抛弃了，NIO成为了默认的IO方式。下面来看一下Tomcat中的NIO是怎么实现的。
+
+  在Tomcat中，NIO的核心在于Selector选择器（http://ifeve.com/selectors/    https://www.jianshu.com/p/f26f1eaa7c8e） 。
+  Selector简要的来说就是一个类似注册中心，可能会发生事件的Channel注册到Selector中，当其中有Channel可以读时，就执行select，遍历出可以读数据的socket，进行读操作。
+  Selector在NioEndpoint中是以Poller实现的，它维护了一个Selector。Accptor中SocketChannel的生成，注册到selector；Poller中获取Channel，包装并交给线程池的总流程以下图所示。
+  ![Nio流程](../Pics/tomcat5.jpg)
+  对比BIO和NIO，实际具体到读数据，都是主动读数据，所以都是同步读；至于阻塞和非阻塞，BIO是每次来一个请求，都要阻塞在read()方法中读，而NIO来一起请求时，会将数据Channel注册到Selector中，相当于Selector维持了多个Channel，哪个来数据就去读哪个，就算读不到数据，Selector也一直在运行，所以是非阻塞。
 
 > https://www.zhihu.com/question/266222348
-https://zhuanlan.zhihu.com/p/83597838
-https://www.zhihu.com/question/64862912
-## Tomcat中的设计模式
+> https://zhuanlan.zhihu.com/p/83597838
+> https://www.zhihu.com/question/64862912
+> https://www.iteye.com/blog/gearever-1844203  这个博客写的很好
 
+## Tomcat中的设计模式
+  目前看到的Tomcat中的设计模式有单例模式，职责链模式，外观模式，适配器模式，组合模式
+  下面一个一个来说
+#### 单例模式
+  单例模式的存在是为了保障一些在程序中只出现一次的资源，比如线程池、缓存、注册表等，只出现一次，也只能出现一次。通常我们可能会使用static变量作为全局变量使之全局唯一，但它需要在程序一开始就实例化，浪费资源。
+  单例模式采用private的构造器 + getInstance()延迟实例化的方式实现。下面贴代码
+
+  ```
+public class Single {
+	// 静态的
+    private static Single singleInstance = null;
+	// 私有的构造器
+    private Single() {
+        // TODO
+    }
+	
+    public static Single getInstance() {
+    	// 判断是否已经实例化
+    	if (singleInstance == null) {
+            singleInstance = new Single();
+        }
+        return singleInstance;
+    }
+}
+  ```
+  以上方式就是单例模式，需要注意的点已经注释标注了。
+  采用了单例模式也并非完全安全，仅仅是在单线程情况下安全，下面我们来考虑一下多线程情况下。如果一个线程第一次调用getInstance()，此时没有实例化，该线程进入了方法，在if刚刚判断完成之后，线程执行切换到了另一个线程，其也判断了singleInstance==null，并实例化。再切换回第一个线程，此时就实例化了两个Single对象，如果接下来的方法必须顺序执行，那么会产生严重的线程安全问题。
+  那么怎么解决这个问题呢？当然就是线程同步。
+  首先我们考虑加锁
+  ```
+public class Single {
+	// 静态的
+    private static Single singleInstance = null;
+	// 私有的构造器
+    private Single() {
+        // TODO
+    }
+	// 在这里将方法变成同步方法，在一个线程没有退出此方法之前
+	// 其他线程无法进入该方法
+    public static synchronized Single getInstance() {
+    	// 判断是否已经实例化
+    	if (singleInstance == null) {
+            singleInstance = new Single();
+        }
+        return singleInstance;
+    }
+}
+  ```
+  看起来同步代码块好像解决了问题，但是却造成了严重的性能问题。如果你的软件可以接受性能的缺陷，那就这么做吧，因为它最简单，也最容易理解。如果不能接受，那我们考虑下面的方式。
+* 方式一：抛弃延迟实例化，采用“急切”的创建实例的方法
+  ```
+public class Single {
+	// 在这里直接实例化
+    private static Single singleInstance = new Single();
+    
+    private Single() {
+        // TODO
+    }
+    // 当需要时，直接返回
+    public static synchronized Single getInstance() {       
+        return singleInstance;
+    }
+}
+  ```
+方法一的优点很明确：快；缺点也显而易见，早早的实例化了类，会占用不小的系统资源。
+* 方法二：用“双重检查加锁”，在getInstance()方法中减少同步
+  我们可以想象到 只有第一次实例化Single类的时候才需要同步，所以我们需要一种机制，即时地知道single类有没有被实例化，所以我们利用volatile的可见性
+  ```
+public class Single {
+    // 使用volatile的可见性
+    private volatile static Single singleInstance = null;
+
+    private Single() {
+        // TODO
+    }
+    
+    public static Single getInstance() {
+        if (singleInstance == null) {
+            // 只有第一次才彻底执行这里的代码
+            synchronized (Single.class) {
+                // 进入同步区块后双重检查
+                if (singleInstance == null) {
+                    singleInstance = new Single();
+                }
+            }
+            singleInstance = new Single();
+        }
+        return singleInstance;
+    }
+}
+  ```
   
+  到这里，单例模式就讲的差不多了。
+
+#### 职责链模式
