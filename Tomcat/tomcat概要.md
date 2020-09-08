@@ -1,29 +1,29 @@
 # Tomcat概要
-> 《How Tomcat Works》 《深入剖析Tomcat》 《Tomcat架构解析》  
-> Tomcat是Apache开源的Web服务器，其以Catalina作为Servlet容器，采用Pipeline作为服务的连续触发，Lifecycle管理所有组件的生命周期。  
+> 《How Tomcat Works》 《深入剖析Tomcat》 《Tomcat架构解析》  </br>
+> Tomcat是Apache开源的Web服务器，其以Catalina作为Servlet容器，采用Pipeline作为服务的连续触发，Lifecycle管理所有组件的生命周期。  </br>
 ![Tomcat总体架构](..//Pics/tomcat1.jpg)
-对Tomcat的运行机制很感兴趣，凭着新手的理解，结合上面的书籍浅读了一下Tomcat源码下面进行一些个人理解的总结。  
-基于Tomcat8.5.57源码
+对Tomcat的运行机制很感兴趣，凭着新手的理解，结合上面的书籍浅读了一下Tomcat源码下面进行一些个人理解的总结。  </br>
+基于Tomcat8.5.57源码</br>
 # Tocmat中的一些知识点
 ## Tomcat架构的简单描述
-  要理解Tomcat，就要理解Http，一次Http请求的过程中发生了什么，将要发生什么，可能会发生什么。    
-  跟着上面那张图，把Tomcat的基本架构理顺一下。首先，一个简单的服务器可以被描述为Server，它有启动和停止命令，能够使用Socket监听端口；我们的服务器需要处理连接和处理请求，将它们解耦，我们有了Connector和Container，其中Connector负责开启Socket并监听客户端请求、返回响应数据；Container负责处理请求。  
-  在上面的模式中，如果我们需要让他们形成工作流，一个Server是无法管理多个Connector和Container的对应的，所以多了一层Service，用来管理多个Connector和一个Container的对应，而Server管理多个Service。
-  接下来Tomcat把Container命名为了Engine，表示整个Servlet引擎。  
-  一个Engine下面可以有多个应用，一个应用为一个Context，实际上对应的就是一个Web Application，我们可以在配置文件中修改端口配置多个Context，也就实现了一个Tomcat中运行多个项目的目的。  
-  Host代表一个虚拟域名，内部嵌套Context。  
-  一个Wrapper对应一个Servlet，Context中有多个Wrapper。  
-  我们再次提起Container，这里以上提到的Engine，Host，Context，Wrapper均继承自Container。  
-  再抽象一层，我们需要管理所有组件，包括Server和Service的生命周期，我们就让所有的组件都实现一个管理生命周期的接口，称之为LifeCycle。  
-  从Engine到Host，再到Context，再到Wrapper，都维护了一个Pipeline，有基础Valve，其层级之间通过PipeLline连接，并可以通过Valve对请求处理进行扩展（比如密码校验等）。这里叫做责任链模式。  
-  接下来我们再看Connector的设计，连接器完成的任务有  
-    1，监听端口，读取请求  
-    2，将请求数据按照指定协议解析  
-    3，根据请求地址匹配正确的容器进行处理  
-    4，容器处理完成后，将响应返回客户端  
-  从这里我们可以看到，连接其需要判断不同的协议，还要选择不同的容器。这里Tomcat对其进行了解耦，设计了Endpoint作为IO，监听请求；Processor按照请求地址映射到容器进行处理（Mapper）。Tomcat通过适配器模式实现了Connector与Mapper、Container的解耦，默认为CoyoteAdapter。  
-  为了解决并发问题，Tomcat设计了Executor作为可在组件间共享的线程池，实现了Lifecycle，可按照通用组件进行管理。Executor由Service维护，所以共享范围为同一个Service。  
-  到这里Tomcat的基本结构就大概了解了。 
+&emsp要理解Tomcat，就要理解Http，一次Http请求的过程中发生了什么，将要发生什么，可能会发生什么。</br>
+&emsp跟着上面那张图，把Tomcat的基本架构理顺一下。首先，一个简单的服务器可以被描述为Server，它有启动和停止命令，能够使用Socket监听端口；我们的服务器需要处理连接和处理请求，将它们解耦，我们有了Connector和Container，其中Connector负责开启Socket并监听客户端请求、返回响应数据；Container负责处理请求。  </br>
+&emsp在上面的模式中，如果我们需要让他们形成工作流，一个Server是无法管理多个Connector和Container的对应的，所以多了一层Service，用来管理多个Connector和一个Container的对应，而Server管理多个Service。</br>
+&emsp接下来Tomcat把Container命名为了Engine，表示整个Servlet引擎。  </br>
+&emsp  一个Engine下面可以有多个应用，一个应用为一个Context，实际上对应的就是一个Web Application，我们可以在配置文件中修改端口配置多个Context，也就实现了一个Tomcat中运行多个项目的目的。  </br>
+&emsp  Host代表一个虚拟域名，内部嵌套Context。  </br>
+&emsp  一个Wrapper对应一个Servlet，Context中有多个Wrapper。  </br>
+&emsp  我们再次提起Container，这里以上提到的Engine，Host，Context，Wrapper均继承自Container。  </br>
+&emsp  再抽象一层，我们需要管理所有组件，包括Server和Service的生命周期，我们就让所有的组件都实现一个管理生命周期的接口，称之为LifeCycle。  </br>
+&emsp  从Engine到Host，再到Context，再到Wrapper，都维护了一个Pipeline，有基础Valve，其层级之间通过PipeLline连接，并可以通过Valve对请求处理进行扩展（比如密码校验等）。这里叫做责任链模式。  </br>
+&emsp  接下来我们再看Connector的设计，连接器完成的任务有  </br>
+&emsp&emsp    1，监听端口，读取请求  </br>
+&emsp&emsp    2，将请求数据按照指定协议解析  </br>
+&emsp&emsp    3，根据请求地址匹配正确的容器进行处理  </br>
+&emsp&emsp    4，容器处理完成后，将响应返回客户端  </br>
+&emsp  从这里我们可以看到，连接其需要判断不同的协议，还要选择不同的容器。这里Tomcat对其进行了解耦，设计了Endpoint作为IO，监听请求；Processor按照请求地址映射到容器进行处理（Mapper）。Tomcat通过适配器模式实现了Connector与Mapper、Container的解耦，默认为CoyoteAdapter。  </br>
+&emsp  为了解决并发问题，Tomcat设计了Executor作为可在组件间共享的线程池，实现了Lifecycle，可按照通用组件进行管理。Executor由Service维护，所以共享范围为同一个Service。  </br>
+&emsp  到这里Tomcat的基本结构就大概了解了。 </br>
 
 ## Tomcat初始化流程  
 ![Tomcat初始化流程](..//Pics/tomcat2.jpg)
