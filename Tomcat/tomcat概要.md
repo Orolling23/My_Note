@@ -41,9 +41,9 @@
 &emsp;&emsp;&emsp;Nio是利用了Java的NIO实现非阻塞IO</br>
 &emsp;&emsp;&emsp;Nio2利用代码实现</br>
 
-> https://www.javadoop.com/post/tomcat-nio
-> https://juejin.im/post/6844903874122383374
-> 这两篇文章讲endpoint的细节讲的比较多，直接看文章+源码即可，这里重点说Poller。
+> https://www.javadoop.com/post/tomcat-nio</br>
+> https://juejin.im/post/6844903874122383374</br>
+> 这两篇文章讲endpoint的细节讲的比较多，直接看文章+源码即可，这里重点说Poller。</br>
 
 &emsp;我们可以看到Poller是NioEndpoint的内部类，其实现了Runnable接口。在endpoint的startinternal方法中，有这么一段。</br>
   ![Endpoint](../Pics/tomcat4.jpg)
