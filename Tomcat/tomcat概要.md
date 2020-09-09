@@ -118,16 +118,16 @@
 ​    
 &emsp;NIO是non-blocking I/O，非阻塞IO，在Tomcat实现中，读数据还是同步读，所以是同步非阻塞IO。在Tomcat8.5之后，BIO已经被完全抛弃了，NIO成为了默认的IO方式。下面来看一下Tomcat中的NIO是怎么实现的。</br>
 
-&emsp;在Tomcat中，NIO的核心在于Selector选择器（http://ifeve.com/selectors/    https://www.jianshu.com/p/f26f1eaa7c8e） 。</br>
+&emsp;在Tomcat中，NIO的核心在于Selector选择器（http://ifeve.com/selectors/   &emsp; https://www.jianshu.com/p/f26f1eaa7c8e） 。</br>
 &emsp;Selector简要的来说就是一个类似注册中心，可能会发生事件的Channel注册到Selector中，当其中有Channel可以读时，就执行select，遍历出可以读数据的socket，进行读操作。</br>
 &emsp;Selector在NioEndpoint中是以Poller实现的，它维护了一个Selector。Accptor中SocketChannel的生成，注册到selector；Poller中获取Channel，包装并交给线程池的总流程以下图所示。</br>
   ![Nio流程](../Pics/tomcat5.jpg)
 &emsp;对比BIO和NIO，实际具体到读数据，都是主动读数据，所以都是同步读；至于阻塞和非阻塞，BIO是每次来一个请求，都要阻塞在read()方法中读，而NIO来一起请求时，会将数据Channel注册到Selector中，相当于Selector维持了多个Channel，哪个来数据就去读哪个，就算读不到数据，Selector也一直在运行，所以是非阻塞。</br>
 
-> https://www.zhihu.com/question/266222348
-> https://zhuanlan.zhihu.com/p/83597838
-> https://www.zhihu.com/question/64862912
-> https://www.iteye.com/blog/gearever-1844203  这个博客写的很好
+> https://www.zhihu.com/question/266222348</br>
+> https://zhuanlan.zhihu.com/p/83597838</br>
+> https://www.zhihu.com/question/64862912</br>
+> https://www.iteye.com/blog/gearever-1844203  这个博客写的很好</br>
 
 ## Tomcat中的设计模式
 &emsp;目前看到的Tomcat中的设计模式有单例模式，职责链模式，外观模式，适配器模式，组合模式</br>
