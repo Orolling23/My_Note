@@ -130,7 +130,7 @@
 > https://www.iteye.com/blog/gearever-1844203  这个博客写的很好</br>
 
 ## Tomcat中的设计模式
-&emsp;目前看到的Tomcat中的设计模式有单例模式，职责链模式，外观模式，适配器模式，组合模式</br>
+&emsp;目前看到的Tomcat中的设计模式有单例模式，职责链模式，外观模式，适配器模式，工厂模式，组合模式</br>
 &emsp;下面一个一个来说</br>
 
 #### 单例模式
@@ -227,3 +227,12 @@ public class Single {
 &emsp;到这里，单例模式就讲的差不多了。</br>
 
 #### 职责链模式
+在Tomcat中，非常核心的设计就是采用Pipeline + Valve形成的职责链（或者叫责任链）模式，其特征是链式的对信息进行处理，常用在消息解析、邮件过滤等。</br>
+CoyoteAdapter的service中可以看到有一行代码：</br>
+![责任链](../Pics/tomcat6.jpg)
+从这里的invoke方法进去，就开始了职责链。</br>
+这里的Pipeline是Container的一个属性，Pipeline中维护了第一个Valve作为first，其后每一个Valve都维护了一个next。若要插入一个新的Valve，则要递归的寻找此时链表的尾部插入。</br>
+每进入一个新的Valve，都要通过调用其接口Valve中定义的invoke方法，每一个invoke的最后都调用下一个Valve的invoke，当到达Pipeline尾部之后，若后面还有新的Pipeline（比如Engine后面要调用Host的），则调用下一个起始Container的getPipeline继续往下执行。
+![责任链](../Pics/tomcat7.jpg)
+
+#### 外观模式
