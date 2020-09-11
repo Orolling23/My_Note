@@ -227,6 +227,7 @@ public class Single {
 &emsp;到这里，单例模式就讲的差不多了。</br>
 
 #### 职责链模式
+
 在Tomcat中，非常核心的设计就是采用Pipeline + Valve形成的职责链（或者叫责任链）模式，其特征是链式的对信息进行处理，常用在消息解析、邮件过滤等。</br>
 CoyoteAdapter的service中可以看到有一行代码：</br>
 ![责任链](../Pics/tomcat6.jpg)
@@ -235,4 +236,473 @@ CoyoteAdapter的service中可以看到有一行代码：</br>
 每进入一个新的Valve，都要通过调用其接口Valve中定义的invoke方法，每一个invoke的最后都调用下一个Valve的invoke，当到达Pipeline尾部之后，若后面还有新的Pipeline（比如Engine后面要调用Host的），则调用下一个起始Container的getPipeline继续往下执行。
 ![责任链](../Pics/tomcat7.jpg)
 
+#### 工厂模式
+
+工厂模式可以说是OO设计的精华之一，可以将“初始化”“实例化”任务从主要代码中解耦，重点解决代码中依赖的问题。接下来我们将初始化任务一步一步解耦。**所有的工厂模式都用来封装对象的创建。**下面主要来自Head First设计模式</br>
+通常我们需要实例化一个新的对象时，我们通常需要使用其类的构造器</br>
+```
+	Pizza p = new Pizza();
+```
+通常我们这样new对象没有什么错误，但在工程中，尤其是有可能要修改的地方，大量使用对具体类的实例化会让你的代码“对修改关闭”，想修改或添加新的具体类型来扩展代码到新的环境，必须要重新打开代码找到修改的地方。所以，我们需要一个方法增加扩展性。</br>
+假如我们现在有三种匹萨可供客户选择，在点单方法里判断类型肯定是不符合程序设计要求的，也对点单本身的程序流程可读性、扩展性有很大的破坏，所以我们需要一个**简单工厂**（简单工厂其实并不是设计模式，而是一种解耦的编程习惯）
+```
+public class PizzaStore {
+    SimplePizzaFactory factory;
+
+    PizzaStore(SimplePizzaFactory factory) {
+        this.factory = factory;
+    }
+
+    public Pizza orderPizza(String type) {
+        Pizza pizza;
+        // 利用工厂传入所需类型，解耦
+        pizza = factory.createPizza(type);
+
+        pizza.prepare();
+        pizza.bake();
+        pizza.cut();
+        pizza.box();
+        return pizza;
+    }
+}
+```
+```
+// 定义简单工厂
+public class SimplePizzaFactory {
+
+    public Pizza createPizza(String type) {
+        Pizza pizza = null;
+
+        if (type.equals("cheese")) {
+            pizza = new CheesePizza();
+        } else if (type.equals("pepperoni")) {
+            pizza = new PepperoniPizza();
+        } else if (type.equals("clam")) {
+            pizza = new ClamPizza();
+        } else if (type.equals("veggie")) {
+            pizza = new VeggiePizza();
+        }
+        return pizza;
+    }
+}
+```
+利用以上方法我们就可以使用简单工厂来解耦实例化的过程，我们可以创建一些不同的PizzaFactory，来为每个不同需求的PizzaStore构造披萨工厂。</br>
+
+----------------------------------------------------
+
+刚才我们通过单独定义工厂类的方法解耦了实例化的流程，**而PizzaStore中要用到的Factory还是被直接实例化，并没有做到PizzaStore和披萨种类之间的扩展性。**下面我们再考虑一个问题，如果我们希望将工厂绑定在构造者中，并保有一定的扩展性，使得后续类可以实现继承构造者PizzaStore而实现不同种类的披萨店铺的问题。需要用到**工厂方法模式**</br>
+让后续披萨店只需要继承就可以获得所有的功能，并且披萨的种类由子类决定，我们要将PizzaStore变为接口，而点单代码在每个披萨店中是相同的，我们并不想让加盟店自己复写实现，所以我们将PizzaStore变为抽象类。</br>
+我们将createPizza合并到PizzaStore中，但其只定义方法签名，让子类自己实现自己的披萨类型，所以createPizza方法要是一个抽象方法。</br>
+
+```
+public abstract class PizzaStore {
+
+    public Pizza orderPizza(String type) {
+        Pizza pizza;
+        // 利用工厂传入所需类型，解耦
+        pizza = createPizza(type);
+
+        pizza.prepare();
+        pizza.bake();
+        pizza.cut();
+        pizza.box();
+        return pizza;
+    }
+
+    abstract Pizza createPizza(String type);
+}
+```
+
+所以此时子类可以实现PizzaStore抽象类，实现自己的**披萨工厂方法**。
+```
+public class NYPizzaStore extends PizzaStore{
+    @Override
+    Pizza createPizza(String type) {
+        Pizza pizza = null;
+
+        if (type.equals("cheese")) {
+            pizza = new CheesePizza();
+        } else if (type.equals("pepperoni")) {
+            pizza = new PepperoniPizza();
+        } else if (type.equals("clam")) {
+            pizza = new ClamPizza();
+        } else if (type.equals("veggie")) {
+            pizza = new VeggiePizza();
+        }
+
+        return pizza;
+    }
+}
+```
+现在如果我想点一家来自纽约口味的披萨，那我需要做下面的事。
+```
+	// 注意这里的句柄其实是父类的句柄
+	PizzaStore store = new NYPizzaStore();
+	Pizza pizza = store.orderPizza("cheese");
+```
+同时接下来Pizza也可以通过工厂方法模式解耦为不同口味的Pizza创建
+
+我们可以分析一下这里是怎么解耦的。首先点单程序在父类和每个子类中都是相同的，当我们实例化父类的PizzaStore句柄来实例化子类时，我们调用的orderPizza("cheese")方法实际上并**不知道**实际要找哪种类型的披萨来生产。**具体来说就是由于Pizza对象是抽象的，order并不知道哪些实际具体的类参与了生产过程，这就是解耦。这里也就解耦了超类中的公用代码和子类独特的生产代码。**</br>
+
+我们定位到这种披萨是因为客户端程序实例化的PizzaStore句柄是指向NY的，也就是说，orderPizza最终会找到的是哪种披萨是由子类决定的，而子类是由客户决定的，所以是顾客决定了到哪家店去生产披萨。</br>
+
+**工厂方法模式**通过让子类决定该创建的对象是什么，来达到将对象创建的过程封装的目的。工厂方法模式通过抽象的Product和Creator方法来封装具体类型的实例化，而只有子类真正实现工厂方法并创建产品。对比简单工厂，工厂方法模式实现了Creator和Product之间的松耦合。简单工厂不具有工厂方法的弹性，因为简单工厂不能变更正在创建的产品。所以我们讲简单工厂并不是设计模式，而只是一种编程习惯而已。</br>
+
+下面我们再从OO设计的角度去理解工厂方法。当我们不用任何工厂，直接再PizzaStore中用new创建Pizza时，披萨店和披萨是紧耦合的，披萨店紧紧依赖披萨。
+![工厂模式](../Pics/factory1.jpg)
+这样的依赖方式会给我们的代码扩展性带来不小的麻烦，所以**代码里减少对具体类的依赖是件好事**，遵循**要依赖抽象，不要依赖具体类，这样的OO设计叫做依赖倒置原则**。高层组件要依赖高层组件，不要依赖具体的底层组件。</br>
+
+所以我们利用工厂模式，让PizzaStore（高层）依赖Pizza抽象类/接口（高层），实现类NYPizzaStore（低层）依赖CheesePizza（低层），而NY和Cheese的实现都依赖于高层的抽象类，看起来像下面这样。
+![依赖倒置原则](../Pics/factory2.jpg)
+有了这样的依赖倒置的思想，当我们在设计披萨店的时候，就可以不用考虑具体的披萨种类，专心于披萨店自己的流程了。下面是几个指导方针，帮助你遵循此原则（***并非完全必须遵守***）。</br>
+1. 变量不可以持有具体类的引用。如果使用new，就会持有，你可以改用工厂来避免。</br>
+2. 不要让类派生于具体类。派生于具体类就会以来具体类，请派生于抽象类或接口。</br>
+3. 不要覆盖基类中已经实现的方法。如果或需要覆盖，就说明你的基类不是一个是个被继承的抽象。基类中的方法应该由所有子类共享。</br>
+
+--------------------------------------------------------
+
+上面我们用工厂方法模式**将客户代码从需要实例化的具体类中解耦**，其只生产了一类产品，且创建新的类型的工厂需要继承整个客户代码。下面我们来看看一种新的工厂模式叫做**抽象工厂模式**，它能够创建一个产品家族或者将一系列产品的生产过程集合起来。</br>
+
+我们以披萨的原材料作为举例。我们都知道同一种披萨，比如芝士披萨，在不同的地区有不同的配料，有些地方可能会放甜芝士，有些地方放咸芝士，有些地方放蘑菇，有些地方放蔬菜。我们刚才用工厂方法模式解耦出来了披萨的生产环境，但如果为每种同名的披萨再创建一种创建披萨的工厂方法，那简直太复杂了。所以我们需要**将生产披萨的原料工厂化**，对于不同地区的披萨，创建不同的工厂，这就是抽象工厂模式了。</br>
+
+我们还利用上面工厂方法模式已经抽象出的工厂方法继续向下解耦。</br>
+> ```
+> public abstract class PizzaStore {
+>
+>    public Pizza orderPizza(String type) {
+>       Pizza pizza;
+>        // 利用工厂传入所需类型，解耦
+>       pizza = createPizza(type);
+>
+>       pizza.prepare();
+>       pizza.bake();
+>       pizza.cut();
+>       pizza.box();
+>       return pizza;
+>   }
+>   
+>   abstract Pizza createPizza(String type);
+> }
+> ```
+>
+> 所以此时子类可以实现PizzaStore抽象类，实现自己的**披萨工厂方法**。
+> ```
+> public class NYPizzaStore extends PizzaStore{
+>    @Override
+>   Pizza createPizza(String type) {
+>       Pizza pizza = null;
+>       
+>       if (type.equals("cheese")) {
+>           pizza = new CheesePizza();
+>       } else if (type.equals("pepperoni")) {
+>           pizza = new PepperoniPizza();
+>       } else if (type.equals("clam")) {
+>           pizza = new ClamPizza();
+>       } else if (type.equals("veggie")) {
+>           pizza = new VeggiePizza();
+>       }
+>   
+>       return pizza;
+>   }
+>}
+>
+>```
+
+上面的代码方式**只能创建Pizza这一种产品的工厂，而不能创建多种Pizza原料的工厂**
+我们下面看看如何为每种不同地区、不同口味的披萨创建原料工厂</br>
+
+```
+public interface IngredentFactory {
+
+    Dough createDough();
+
+    Sauce createSauce();
+
+    Cheese createCheese();
+
+    Veggies[] createVeggies();
+
+    Pepperoni createPepperoni();
+
+    Clam createClam();
+}
+
+```
+然后创建工厂实现类</br>
+```
+public class NYIngredentFactory implements IngredentFactory{
+    @Override
+    public Dough createDough() {
+        return new ThinCrustDought();
+    }
+
+    @Override
+    public Sauce createSauce() {
+        return new MarinaraSauce();
+    }
+
+    @Override
+    public Cheese createCheese() {
+        return new ReggianoCheese();
+    }
+
+    @Override
+    public Veggies[] createVeggies() {
+        return new Veggies[]{
+                new Garlic(),
+                new Onion(),
+                new Mushroom()
+        };
+    }
+
+    @Override
+    public Pepperoni createPepperoni() {
+        return new SlicedPepperoni();
+    }
+
+    @Override
+    public Clam createClam() {
+        return new FreshClams();
+    }
+}
+
+```
+
+现在看看我们怎么生产一个纽约口味的CheesePizza</br>
+
+```
+public abstract class Pizza {
+    String name;
+    Dough dough;
+    Sauce sauce;
+    Veggies veggies[];
+    Cheese cheese;
+    Pepperoni pepperoni;
+    Clam clam;
+
+
+    abstract void prepare();
+
+    void cut() {
+        System.out.println("cut");
+    }
+
+    void bake() {
+        System.out.println("bake");
+    }
+    void box() {
+        System.out.println("box");
+    }
+
+}
+```
+实现CheesePizza，公用的，要实现哪个口味的，仅需要传入不同的原料工厂.
+即使是根据个人口味定制，也并不费事，只需要实现一种新的原料工厂传入</br>
+```
+public class CheesePizza extends Pizza{
+    // 每种Pizza都有自己独特的原料工厂来生产多种原料
+    IngredentFactory ingredentFactory;
+    // 传入所需的工厂
+    CheesePizza(IngredentFactory ingredentFactory) {
+        this.ingredentFactory = ingredentFactory;
+    }
+
+    @Override
+    void prepare() {
+        System.out.println("prepare");
+        dough = ingredentFactory.createDough();
+        cheese = ingredentFactory.createCheese();
+        clam = ingredentFactory.createClam();
+        pepperoni = ingredentFactory.createPepperoni();
+        veggies = ingredentFactory.createVeggies();
+        sauce = ingredentFactory.createSauce();
+    }
+}
+
+```
+
+现在NYPizzaStore变成什么样子了？</br>
+```
+public class NYPizzaStore extends PizzaStore{
+    @Override
+    Pizza createPizza(String type) {
+        Pizza pizza = null;
+        // 原料工厂
+        IngredentFactory ingredentFactory = new NYIngredentFactory();
+
+        if (type.equals("cheese")) {
+            pizza = new CheesePizza(ingredentFactory);
+        } else if (type.equals("pepperoni")) {
+            pizza = new PepperoniPizza(ingredentFactory);
+        } else if (type.equals("clam")) {
+            pizza = new ClamPizza(ingredentFactory);
+        } else if (type.equals("veggie")) {
+            pizza = new VeggiePizza(ingredentFactory);
+        }
+
+        return pizza;
+    }
+}
+
+```
+**抽象工厂模式**就是这样。
+两种工厂模式现在也许比较混乱了，下面我们来对比一下。
+##### 对比工厂方法模式和抽象模式工厂
+* 第一点我们可以看到，工厂方法其实隐藏在抽象工厂模式中。我们抽象工厂继承了一系列产品，但其中的具体产品还是需要工厂方法来创建的，甚至，抽象工厂本身也可能需要工厂方法来创建。
+* 利用工厂方法来创建对象，需要扩展一个类，并覆盖他的工厂方法；利用抽象工厂来创建对象，要为对象实例化一个工厂，然后将它传入针对抽象类型船舰的代码。
+* 工厂方法模式的一个抽象产品类，可以派生多个具体产品类；一个抽象工厂类，可以派生出多个具体工厂类，每个具体工厂类只能创建一个具体产品类的实例。
+* 抽象工厂模式中有多个抽象产品类，可以派生多个具体产品类；一个抽象工厂类可以派生多个具体工厂类，每个具体工厂类可以创建多个具体产品类的实例。
+* 要隐藏创建一个对象的复杂创建代码时，可以使用工厂方法。要隐藏一系列产品或者将相关产品的复杂创建代码集合起来时，可以使用抽象工厂。
+* 抽象工厂类似一个大的工厂，而工厂方法类似大工厂里的一台流水线。
+* 工厂模式无论哪种，本质就是**利用多态，对获取对象的过程抽象**，避免**new的时候是啥就是啥**
+* 上面的披萨的例子其实并不恰当，具体写代码也不需要拘泥于两种工厂模式，要根据场景去理解是否需要工厂，需要什么样的工厂。多写代码去理解吧。
+>https://www.zhihu.com/question/42975862</br>
+>https://www.zhihu.com/question/27125796
+
+
+#### 适配器模式
+适配器模式顾名思义，就是将改变A与B不适配的问题，使之适配。
+![Adaptor](../Pics/adaptor1.jpg)
+适配器模式的目的是**使接口适配**，分为类适配器和对象适配器。
+* 类适配器
+由于Java中不支持多继承，所以对于两个类的适配只能采用组合的方式，不过对于接口和类之间的适配还是可以通过**继承**来完成的。
+```
+// 鸭子的叫声是quack
+public interface Duck {
+    public void quack();
+}
+```
+
+```
+// 火鸡的叫声是gobble
+public class Turkey {
+    public void gobble() {
+        System.out.println("Gobble Gobble");
+    }
+}
+
+```
+```
+// 我们用类适配器把火鸡伪装成鸭子
+public class TurkeyAdaptor extends Turkey implements Duck{
+    @Override
+    public void quack() {
+        super.gobble();
+    }
+}
+```
+下面测试一下
+```
+public class Test {
+    public static void main(String[] args) {
+        Duck turkey = new TurkeyAdaptor();
+        testDuck(turkey);
+    }
+
+    public static void testDuck(Duck duck) {
+        for (int i = 0; i < 5; i++) {
+            duck.quack();
+        }
+    }
+}
+
+运行结果：
+Gobble Gobble
+Gobble Gobble
+Gobble Gobble
+Gobble Gobble
+Gobble Gobble
+```
+看起来testDuck根本看不出这是一只伪装成鸭子的火鸡。类适配器一般要继承被适配的，将被适配的类实现到要伪装的接口上。
+* 对象适配器
+对象适配器一般采用组合的方式。我们还是用刚才的鸭子和火鸡。
+```
+public class TurkeyAdaptor implements Duck{
+
+    private Turkey turkey;
+
+    TurkeyAdaptor(Turkey trukey) {
+        this.turkey = trukey;
+
+    }
+    @Override
+    public void quack() {
+        turkey.gobble();
+    }
+}
+```
+```
+public class Test {
+    public static void main(String[] args) {
+        Duck turkey = new TurkeyAdaptor(new Turkey());
+        testDuck(turkey);
+    }
+
+    public static void testDuck(Duck duck) {
+        for (int i = 0; i < 5; i++) {
+            duck.quack();
+        }
+    }
+}
+```
+
+对象适配器通过**将被适配的对象传入**来将对象转为要实现的接口。</br>
+总结一下的话就是，适配器模式通过继承或者组合的方式将一个类的接口转换成客户期望的另一个接口，适配器让原本接口不兼容的类可以合作。
+**适配器模式和装饰者模式、外观模式三者之间要注意区分，明确场景**
+![adaptor2](../Pics/adaptor2.jpg)
+
 #### 外观模式
+外观模式与适配器模式经常放在一起说，这两个模式都是面向接口，将接口或对象包装起来的设计模式，但解决的问题截然不同。下面我们来看一下。</br>
+
+外观模式的宗旨是让接口更简单。遵守**最少知识原则**。
+给出一个例子，比如说我们要在电脑上看电影，需要电脑和音响两个类
+```
+public class Computer {
+
+    void open(){}
+    void findMovie(){}
+    void openMovie(){}
+
+    void closeMovie(){}
+    void closeComputer(){}
+}
+```
+```
+public class Sound {
+
+    void open(){}
+    void upper(){}
+    void lower(){}
+    void close(){}
+}
+```
+我们看电影之前可能需要打开电脑，寻找电影，打开电影，打开音响，调高音量等，非常麻烦，我们就可以用外观模式来解决这个问题。
+```
+public class MovieFacade {
+    Computer computer;
+    Sound sound;
+
+    MovieFacade(Computer computer, Sound sound) {
+        this.computer = computer;
+        this.sound = sound;
+    }
+
+    public void watchMovie() {
+        computer.open();
+        computer.findMovie();
+        computer.openMovie();
+
+        sound.open();
+        sound.upper();
+    }
+}
+```
+这样我们就可以通过一个方法来操作电脑和音响了。</br>
+>在Tomcat中，外观模式最重要作用是包装一些需要向上转型（不安全）的子类。比如在StandardWrapperValve类的invoke方法中，Request类型的request需要被向上转型传递给接收ServletRequest类型的doFilter方法。如果我们直接向上转型，那么知道Tomcat中类继承关系的程序员可以直接通过向下转型访问到我们不想让他访问到的方法。</br>
+所以这里Tomcat在getRequest()方法中将Request包装为了RequestFacade类型，Facade实现了HttpServletRequest（ServletRequest的子接口），将Facade传递给doFilter方法，这样程序员从Facade就没有办法向下转型，访问到能破坏Request安全性的方法了。
+
+* 最少知识原则
+我们希望在OO设计中，不要让太多的类耦合在一起，利用外观模式可以良好的解决这个问题。
+
+#### 组合模式
+
