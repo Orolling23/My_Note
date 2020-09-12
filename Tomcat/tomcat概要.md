@@ -706,3 +706,200 @@ public class MovieFacade {
 
 #### 组合模式
 
+组合模式是OO设计中利用多态将类进行组合的一种设计模式。当你有一些对象的集合，他们彼此之间有“整体/部分”的关系，部分对象之间的实现又有不同，并且你想用一致的方式去对待这些对象时，你就需要组合模式来完成任务。</br>
+组合模式模式以**树形**结构表示部分与整体的层次结构，使得用户对整个对象和组合对象的使用具有一致性。
+
+##### 组成元素：
+* 抽象构件角色(Composite)：是组合中对象声明接口，实现所有类共有接口的默认行为。
+* 树叶构件角色(Leaf)：上述提到的单个对象，叶节点没有子节点。
+* 树枝构件角色(Composite)：定义有子部件的组合部件行为，存储子部件，在Component接口中实现与子部件有关的操作。
+* 客户端(Client)：使用 Component 部件的对象。
+
+![Composite](../Pics/composite1.jpg)
+下面我们代码看一下实例。我们设计一个文件系统，文件夹中可能包含文件夹或文件。
+首先实现一个抽象根节点Dir作为Component
+```
+public abstract class Dir {
+
+    protected List<Dir> mDirs = new ArrayList<>();
+
+    protected String name;
+
+    public Dir(String name) {
+        this.name = name;
+    }
+
+    public abstract void addDir(Dir dir);
+
+    public abstract void removeDir(Dir dir);
+
+    public abstract void clear();
+
+    public abstract void print(int deep);
+
+    public abstract List<Dir> getFiles();
+
+    public String getName() {
+        return name;
+    }
+}
+```
+具体文件夹类作为Composite。
+```
+public class Folder extends Dir {
+
+    public Folder(String name) {
+        super(name);
+    }
+
+    @Override
+    public void addDir(Dir dir) {
+        mDirs.add(dir);
+    }
+
+    @Override
+    public void removeDir(Dir dir) {
+        mDirs.remove(dir);
+    }
+
+    @Override
+    public void clear() {
+        mDirs.clear();
+    }
+
+    // 重点
+    @Override
+    public void print(int deep) {
+        for (int i = 0; i < deep; i++) {
+            System.out.print(" ");
+        }
+        System.out.println(getName() + " (");
+        Iterator<Dir> iterator = mDirs.iterator();
+        while (iterator.hasNext()) {
+            Dir dir = iterator.next();
+            for (int i = 0; i < deep; i++) {
+                System.out.print(" ");
+            }
+            dir.print(deep + 1);
+            if (iterator.hasNext()) {
+            }
+        }
+        for (int i = 0; i < deep; i++) {
+            System.out.print(" ");
+        }
+        System.out.println(")");
+    }
+
+    @Override
+    public List<Dir> getFiles() {
+        return mDirs;
+    }
+}
+```
+
+具体文件类作为Leaf
+```
+public class File extends Dir{
+
+    public File(String name) {
+        super(name);
+    }
+
+    @Override
+    public void addDir(Dir dir) {
+        throw new UnsupportedOperationException("文件对象不支持该操作");
+    }
+
+    @Override
+    public void removeDir(Dir dir) {
+        throw new UnsupportedOperationException("文件对象不支持该操作");
+    }
+
+    @Override
+    public void clear() {
+        throw new UnsupportedOperationException("文件对象不支持该操作");
+    }
+
+    @Override
+    public void print(int deep) {
+        for (int i = 0; i < deep; i++) {
+            System.out.print(" ");
+        }
+        System.out.println("name: "+name);
+    }
+
+    @Override
+    public List<Dir> getFiles() {
+        throw new UnsupportedOperationException("文件对象不支持该操作");
+    }
+}
+```
+这样就实现了对Folder和File管理的组合模式。下面写一个测试类测试一下
+```
+public class Test {
+    public static void main(String[] args) {
+        testComponent2();
+    }
+
+    public static void testComponent2(){
+        //构造一个目录对象表示 sdcard 盘跟目录
+        Dir diskSdcard = new Folder("sdcard");
+
+        // sdcard 下有一个文件
+        diskSdcard.addDir(new File("bug.log"));
+
+        //sdcard 下还有一个子目录  android
+        Dir android =  new Folder("android");
+        //android 目录下有一个目录
+        Dir data = new Folder("data");
+        data.addDir(new File("2019-09-14.log"));
+        android.addDir(data);
+        diskSdcard.addDir(android);
+
+        //sdcard 下还有一个子目录 baidu
+        Dir baidu =  new Folder("baidu");
+        //android 目录下有一个目录
+        Dir cache = new Folder("cache");
+        cache.addDir(new File("offline.baidu"));
+        baidu.addDir(cache);
+        diskSdcard.addDir(baidu);
+
+        //sdcard 下还有一个子目录 downloads
+        Dir downloads =  new Folder("downloads");
+        //android 目录下有一个目录
+        Dir f360 = new Folder("360");
+        f360.addDir(new File("360.log"));
+        f360.addDir(new File("test.txt"));
+        downloads.addDir(f360);
+        diskSdcard.addDir(downloads);
+
+        //打印文件结构
+        diskSdcard.print(0);
+    }
+}
+
+测试结果：
+sdcard (
+ name: bug.log
+ android (
+   data (
+     name: 2019-09-14.log
+  )
+ )
+ baidu (
+   cache (
+     name: offline.baidu
+  )
+ )
+ downloads (
+   360 (
+     name: 360.log
+     name: test.txt
+  )
+ )
+)
+```
+组合模式中的每个类都要管理该类的内部组件，还要管理后继节点，所以组合模式是**以破坏单一责任设计原则换取透明性。**让客户端在操作组件时，一个元素是组合还是叶子节点，完全是透明的。
+且简化了高层模块的代码，使得其不必关心处理的是单个对象还是整个组合结构。在组合模式中增加了新的枝干构件和叶子构件都很方便，**无须对现有类库进行任何修改，符合 "开闭原则"。**
+通过递归，实现了复杂的树形结构，但其控制却极为简单。</br>
+组合模式的缺点也很明确，新增构建时不方便对构件类型进行限制，在进行一些叶子节点不具有或者组合节点不具有的操作时，必须进行类型检查，这个实现过程比较麻烦。
