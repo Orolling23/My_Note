@@ -718,6 +718,7 @@ public class MovieFacade {
 ![Composite](../Pics/composite1.jpg)
 下面我们代码看一下实例。我们设计一个文件系统，文件夹中可能包含文件夹或文件。
 首先实现一个抽象根节点Dir作为Component
+
 ```
 public abstract class Dir {
 
