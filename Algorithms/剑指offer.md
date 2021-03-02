@@ -859,3 +859,156 @@ class MinStack {
  * int param_4 = obj.min();
  */
 ```
+### 31. 栈的压入、弹出序列
+模拟法，开一个栈，每次压入一个元素，然后循环判断栈顶是否等于popped遍历到的那个元素，如果等于，则弹栈。最后压栈的元素遍历完，如果栈弹空了，则表示true  
+```
+class Solution {
+    public boolean validateStackSequences(int[] pushed, int[] popped) {
+        if (pushed.length != popped.length) return false;
+        int len = pushed.length;
+        if (len == 0) return true;
+        
+        LinkedList<Integer> list = new LinkedList<>();
+
+        int cur = 0;
+        for (int i = 0; i < len; i++) {
+            list.add(pushed[i]);
+
+            while (!list.isEmpty() && list.getLast() == popped[cur]) {
+                list.removeLast();
+                cur++;
+            }
+        }
+        return list.isEmpty();
+    }
+}
+```
+### 32 - I. 从上到下打印二叉树
+层序遍历二叉树，用队列Queue来做。  
+每遍历到一个节点，就把它的值加入结果，并把它的左右孩子加入队列。  
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public int[] levelOrder(TreeNode root) {
+        Queue<TreeNode> queue = new LinkedList<>();
+        List<Integer> list = new ArrayList<>();
+
+        if (root == null) return new int[0];
+        queue.offer(root);
+        
+        while (!queue.isEmpty()) {
+            TreeNode node = queue.poll();
+            list.add(node.val);
+            if (node.left != null) queue.offer(node.left);
+            if (node.right != null) queue.offer(node.right); 
+        }
+        int[] res = new int[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            res[i] = list.get(i);
+        }
+        return res;
+    }
+}
+```
+### 32 - II. 从上到下打印二叉树 II
+跟上题差不多，层序遍历。不过这题要求每层分别打印，那么就维持int值，代表每层有多长，作为分层的界限即可  
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public List<List<Integer>> levelOrder(TreeNode root) {
+        List<List<Integer>> res = new ArrayList<>();
+        Queue<TreeNode> queue = new LinkedList<>();
+        // 记录上一层的长度
+        int preLen = 0;
+        // 记录新层的长度
+        int newLen = 0;
+
+        if (root == null) return res;
+        queue.offer(root);
+        preLen = 1;
+
+        while (!queue.isEmpty()) {
+            List<Integer> list = new ArrayList<>();
+            while (preLen > 0) {
+                TreeNode node = queue.poll();
+                preLen--;
+                list.add(node.val);
+                if (node.left != null) {
+                    queue.add(node.left);
+                    newLen++;
+                }
+                if (node.right != null) {
+                    queue.add(node.right);
+                    newLen++;
+                }
+            }   
+            res.add(list);
+            preLen = newLen;
+            newLen = 0;
+        }
+        return res;
+    }
+}
+```
+### 32 - III. 从上到下打印二叉树 III
+跟上两题也差不多，特殊的是要记录一个flag，标记当前层是正序还是反序  
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public List<List<Integer>> levelOrder(TreeNode root) {
+        List<List<Integer>> res = new ArrayList<>();
+        if (root == null) return res;
+        LinkedList<TreeNode> list1 = new LinkedList<>();
+        LinkedList<TreeNode> list2 = new LinkedList<>();
+        // true表示当前行从左向右；false表示当前行从右向左
+        boolean flag = true;
+        list1.add(root);
+        while (!list1.isEmpty()) {
+            LinkedList<Integer> tmp = new LinkedList<>();
+            while (!list1.isEmpty()) {
+                TreeNode node = list1.poll();
+                tmp.add(node.val);
+                if (node.left != null) list2.offer(node.left);
+                if (node.right != null) list2.offer(node.right); 
+            }
+            if (flag) {
+                res.add(tmp);
+            } else {
+                List<Integer> tmp2 = new ArrayList<>();
+                while (!tmp.isEmpty()) {
+                    tmp2.add(tmp.removeLast());
+                }
+                res.add(tmp2);
+            }
+            flag = !flag;
+            list1 = list2;
+            list2 = new LinkedList<>();
+        }
+        return res;
+    }
+}
+```
