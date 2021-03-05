@@ -3,6 +3,7 @@
 Spirng是一个旨在提高开发效率，以及系统可维护性的开发框架。  
 我们一般说 Spring 框架指的都是 Spring Framework，它是很多模块的集合，使用这些模块可以很方便地协助我们进行开发。这些模块是：**核心容器、数据访问/集成,、Web、AOP（面向切面编程）、工具、消息和测试模块**。比如：**Core Container 中的 Core 组件是Spring 所有组件的核心，Beans 组件和 Context 组件是实现IOC和依赖注入的基础，AOP组件用来实现面向切面编程。**  
 Spring 官网列出的 Spring 的 6 个特征:  
+
 * 核心技术 ：依赖注入(DI)，AOP，事件(events)，资源，i18n，验证，数据绑定，类型转换，SpEL。
 * 测试 ：模拟对象，TestContext框架，Spring MVC 测试，WebTestClient。
 * 数据访问 ：事务，DAO支持，JDBC，ORM，编组XML。
@@ -21,6 +22,7 @@ Spring 官网列出的 Spring 的 6 个特征:
 ## IoC
 IoC(Inverse of Control：控制反转)是一种设计思想，就是将**原本在程序中手动创建对象的控制权，交由Spring框架管理。IoC容器是Spring实现IoC的载体，IoC容器实际上是个Map，存放的是各种对象**  
 将对象之间的相互依赖关系交给 IoC 容器来管理，并由 IoC 容器完成对象的注入。这样可以很大程度上简化应用的开发，把应用从复杂的依赖关系中解放出来。 **IoC 容器就像是一个工厂一样，当我们需要创建一个对象的时候，只需要配置好配置文件/注解即可，完全不用考虑对象是如何被创建出来的。** 在实际项目中一个 Service 类可能有几百甚至上千个类作为它的底层，假如我们需要实例化这个 Service，你可能要每次都要搞清这个 Service 所有底层类的构造函数，这可能会把人逼疯。如果利用 IoC 的话，你只需要配置好，然后在需要的地方引用就行了，这大大增加了项目的可维护性且降低了开发难度。
+
 ### Spring IoC的初始化过程
 XML —读取—> Resource —解析—> BeanDefinition —注册—> BeanFactory
 ### 参考文章
@@ -28,10 +30,11 @@ https://www.zhihu.com/question/23277575/answer/169698662
 IoC源码 https://javadoop.com/post/spring-ioc  
 https://www.zhihu.com/question/313785621  
 ## AOP
-AOP(Aspect-Oriented Programming：面向切面编程)能够将哪些与业务无关，**却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性。**  
+AOP(Aspect-Oriented Programming：面向切面编程)能够将那些与业务无关，**却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性。**  
 Spring AOP就是**基于动态代理**的，**如果要代理的对象，实现了某个接口，那么Spring AOP会使用JDK Proxy，去创建代理对象**，**而对于没有实现接口的对象，就无法使用 JDK Proxy 去进行代理了，这时候Spring AOP会使用Cglib ，这时候Spring AOP会使用 Cglib 生成一个被代理对象的子类来作为代理**  
 </br>
 另外也可以集成AspectJ实现AOP
+
 ### Spring AOP和AspectJ AOP的区别
 Spring AOP 属于**运行时增强**，而 AspectJ 是**编译时增强**。 Spring AOP 基于**代理(Proxying)**，而 AspectJ 基于**字节码操作(Bytecode Manipulation)**。  
 ## Spring Bean
@@ -46,6 +49,7 @@ Spring AOP 属于**运行时增强**，而 AspectJ 是**编译时增强**。 Spr
 **存在安全问题。因为，当多个线程操作同一个对象的时候，对这个对象的成员变量的写操作会存在线程安全问题。**  
 但是，一般情况下，我们常用的 Controller、Service、Dao 这些 Bean 是**无状态的。无状态的 Bean 不能保存数据，因此是线程安全的。**  
 解决办法：
+
 1. 在类中使用ThreadLocal，将需要的可变变量都保存在ThreadLocal中（推荐）  
 2. 改变Bean作用域为prototype，这样每次请求都会创建一个新的bean，且仅在当前请求中有效，也就避免了线程安全问题  
 ### @Component和@Bean的区别
@@ -88,11 +92,12 @@ public class AppConfig {
 **这篇博客重点看** https://www.jianshu.com/p/1dec08d290c1  
 https://www.cnblogs.com/javazhiyin/p/10905294.html  
 Spring Bean生命周期分为四个部分：
+
 1. 实例化
 2. 属性赋值
 3. 初始化
 4. 销毁
-实际上对应的就是上面的1，2，3，9，12，而其他的几个步骤，就是通过实现Spring提供的接口，而影响Bean生命周期。分为两类接口  
+实际上对应的就是上面的1，2，3，8, 9，11, 12，而其他的几个步骤，就是通过实现Spring提供的接口，而影响Bean生命周期。分为两类接口  
 #### 第一类：影响多个Bean的接口
 实现了这些接口的Bean会切入到多个Bean的生命周期中。正因为如此，这些接口的功能非常强大，Spring内部扩展也经常使用这些接口，例如自动注入以及AOP的实现都和他们有关。
 * BeanPostProcessor

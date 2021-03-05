@@ -1012,3 +1012,283 @@ class Solution {
     }
 }
 ```
+### 33. 二叉搜索树的后序遍历序列
+* 方法一：递归
+后序遍历有以下几个特点：
+1. 根节点在最后
+2. 数组前半段小于root的是左子树，后半段大于root的是右子树
+所以可以递归判断是否是后序遍历序列
+```
+class Solution {
+    public boolean verifyPostorder(int[] postorder) {
+        int len = postorder.length;
+        
+        //左开右闭
+        return recur(postorder, 0, len);
+    }
+
+    private boolean recur(int[] postorder, int i, int j) {
+        // 递归跳出
+        if (i >= j - 1) return true;
+        
+        // 后序遍历根节点在最后
+        int root = postorder[j - 1];
+        // 找到第一个大于root的，就是右子树的第一个节点
+
+        int right = 0;
+        for (;right < j - 1; right++) {
+            if (postorder[right] > root) {
+                break;
+            }
+        }
+
+        // 遍历右子树是否都大于root
+        for (int a = right; a < j - 1; a++) {
+            if (postorder[a] <= root) return false;
+        }
+
+        // 递归判断左右子树是否是后序遍历序列
+        return recur(postorder, i, right) && recur(postorder, right, j - 1);
+    }
+}
+```
+* 方法二：**单调栈**
+在二叉搜索树中，满足以下几点：
+* root的左子树全部都小于root
+* root的右子树全部都大于root
+* root的右子树全部都大于root的左子树
+在二叉搜索树的后序遍历**倒序** [rn, rn-1, ... , r1] 中，满足以下几点：
+* 当节点值ri > ri+1时：节点ri一定是ri+1的右子节点
+* 当节点值ri < ri+1时：节点ri一定是某个root的左子节点，而且root是节点ri+1,ri+2,...,rn中值大于，且大小最接近ri的节点（这里root是直接连接左子节点ri的）
+所以采用**单调栈**方法，倒序遍历，记每个遍历到的节点为ri：
+1. 判断：若ri>root，说明此后序遍历序列不满足二叉搜索树定义
+2. 更新父节点root：当栈不为空且ri < stack.peek()时（由于前面是递增序列，所以弹出的最后一个节点就是离ri最近的），循环执行出栈，并将出栈节点赋给root
+3. 入栈:将当前节点ri入栈
+若遍历完成则说明该后序遍历满足二叉搜索树定义，返回true
+```
+class Solution {
+    public boolean verifyPostorder(int[] postorder) {
+        int root = Integer.MAX_VALUE;
+        Stack<Integer> stack = new Stack<>();
+
+        for (int i = postorder.length - 1; i >= 0; i--) {
+            if (postorder[i] > root) return false;
+            while (!stack.isEmpty() && postorder[i] < stack.peek()) {
+                root = stack.pop();
+            }
+            stack.push(postorder[i]);
+        }
+        return true;
+    }
+}
+```
+### 34. 二叉树中和为某一值的路径
+注意题目中，没有说必须是正整数，且要求路径必须遍历到叶子节点  
+直接dfs即可  
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public List<List<Integer>> pathSum(TreeNode root, int sum) {
+        List<List<Integer>> res = new ArrayList<>();
+        dfs(res, new ArrayList<Integer>(), root, sum, 0);
+        return res;
+    }
+
+    private void dfs(List<List<Integer>> res, List<Integer> tmp, TreeNode node, int sum, int cur) {
+        if (node == null) return;
+
+        cur += node.val;
+        tmp.add(node.val);
+        
+        if (node.left == null && node.right == null) {
+            if (cur == sum) {
+                res.add(new ArrayList<>(tmp));
+            }
+        } 
+
+        dfs(res, tmp, node.left, sum, cur);
+        dfs(res, tmp, node.right, sum, cur);
+
+        tmp.remove(tmp.size() - 1);
+    }
+}
+```
+### 35. 复杂链表的复制
+开辟一个HashMap，存储原链表中的节点对应新链表中的哪个节点
+
+```
+/*
+// Definition for a Node.
+class Node {
+    int val;
+    Node next;
+    Node random;
+
+    public Node(int val) {
+        this.val = val;
+        this.next = null;
+        this.random = null;
+    }
+}
+*/
+class Solution {
+    public Node copyRandomList(Node head) {
+        if (head == null) return null;
+        // 开辟一个HashMap，存储原链表中的节点对应新链表中的哪个节点
+        Map<Node, Node> map = new HashMap<>();
+
+        Node root = new Node(head.val);
+        map.put(head, root);
+        Node ptr1 = root;
+        Node ptr = head.next;
+        // 按照链表复制
+        while (ptr != null) {
+            ptr1.next = new Node(ptr.val);
+            map.put(ptr, ptr1.next);
+            ptr = ptr.next;
+            ptr1 = ptr1.next;
+        }
+
+        // 根据map里保存的节点对应关系，复制random
+        ptr1 = root;
+        ptr = head;
+        while (ptr != null) {
+            ptr1.random = map.get(ptr.random);
+            ptr1 = ptr1.next;
+            ptr = ptr.next;
+        }
+        return root;
+    }
+}
+```
+### 36. 二叉搜索树与双向链表
+* **二叉搜索树的中序遍历是一个递增序列**，所以利用中序遍历的过程来构建双向链表
+* 中序遍历的过程中构建双向链表
+* 先递归构建左子树，记录递归构建之后的最后一个节点为pre，pre的右节点应当为是root，再递归构建右子树
+* 最后首尾相连构建循环双向链表
+```
+/*
+// Definition for a Node.
+class Node {
+    public int val;
+    public Node left;
+    public Node right;
+
+    public Node() {}
+
+    public Node(int _val) {
+        val = _val;
+    }
+
+    public Node(int _val,Node _left,Node _right) {
+        val = _val;
+        left = _left;
+        right = _right;
+    }
+};
+*/
+class Solution {
+    // pre记录cur的左侧节点
+    // head用于记录头节点
+    Node pre, head;
+    public Node treeToDoublyList(Node root) {
+        if (root == null) return null;
+        // 递归构建双向链表
+        dfs(root);
+        // 首尾相连
+        head.left = pre;
+        pre.right = head;
+        return head;
+        
+    }
+
+    private void dfs(Node cur) {
+        if (cur == null) {
+            return;
+        }
+        // 先递归左侧，因为左侧都比较小
+        dfs(cur.left);
+        // 如果递归左侧之后pre为null，说明当前cur是第一个节点
+        if (pre == null) {
+            head = cur;
+        } else {
+            // 否则让pre指向cur
+            pre.right = cur;
+        }
+        cur.left = pre;
+        // 在递归右子树前，让cur变成pre
+        // 完成后，pre指向最后一个节点
+        pre = cur;
+        dfs(cur.right);
+    }
+}
+```
+### 37. 序列化二叉树
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+public class Codec {
+
+    // Encodes a tree to a single string.
+    public String serialize(TreeNode root) {
+        if(root == null) return "[]";
+        StringBuilder res = new StringBuilder("[");
+        Queue<TreeNode> queue = new LinkedList<>() {{ add(root); }};
+        while(!queue.isEmpty()) {
+            TreeNode node = queue.poll();
+            if(node != null) {
+                res.append(node.val + ",");
+                queue.add(node.left);
+                queue.add(node.right);
+            }
+            else res.append("null,");
+        }
+        res.deleteCharAt(res.length() - 1);
+        res.append("]");
+        return res.toString();
+
+    }
+
+    // Decodes your encoded data to tree.
+    public TreeNode deserialize(String data) {
+        if(data.equals("[]")) return null;
+        String[] vals = data.substring(1, data.length() - 1).split(",");
+        TreeNode root = new TreeNode(Integer.parseInt(vals[0]));
+        Queue<TreeNode> queue = new LinkedList<>() {{ add(root); }};
+        int i = 1;
+        while(!queue.isEmpty()) {
+            TreeNode node = queue.poll();
+            if(!vals[i].equals("null")) {
+                node.left = new TreeNode(Integer.parseInt(vals[i]));
+                queue.add(node.left);
+            }
+            i++;
+            if(!vals[i].equals("null")) {
+                node.right = new TreeNode(Integer.parseInt(vals[i]));
+                queue.add(node.right);
+            }
+            i++;
+        }
+        return root;
+    }
+}
+
+// Your Codec object will be instantiated and called as such:
+// Codec codec = new Codec();
+// codec.deserialize(codec.serialize(root));
+```
