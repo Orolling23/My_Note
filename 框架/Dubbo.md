@@ -31,7 +31,7 @@ Dubbo 是阿里巴巴开源的一个基于 Java 的 RPC 框架，中间沉寂了
 * 服务提供者和消费者都会在内存中记录着调用的次数和时间，然后定时的发送统计数据到监控中心。
 ## 服务暴露的流程
 大致流程如下：
-1. 服务的暴露起始于 Spring IOC 容器刷新完毕之后（观察者模式），会根据配置参数组装成 URL， 然后根据 URL 的参数来进行本地或者远程调用。
+1. 服务的暴露起始于 Spring IOC 容器刷新完毕之后（观察者模式），会根据配置参数组装成 URL（URL具体是什么样子的？）， 然后根据 URL 的参数来进行本地或者远程调用。
 2. 会通过 `proxyFactory.getInvoker`，利用 javassist 来进行动态代理，封装真的实现类，然后再通过 URL 参数选择对应的协议来进行 protocol.export，默认是 Dubbo 协议。  
 注：在第一次暴露的时候会调用 createServer 来创建 Server，默认是 NettyServer。
 3. 然后将 export 得到的 exporter 存入一个 Map 中，供之后的远程调用查找，然后会向注册中心注册提供者的信息。
@@ -43,9 +43,12 @@ Dubbo 是阿里巴巴开源的一个基于 Java 的 RPC 框架，中间沉寂了
 服务的引入时机有两种，第一种是**饿汉式**，第二种是**懒汉式**，默认是懒汉式。  
 **饿汉式就是加载完毕就会引入**   
 **懒汉式是只有当这个服务被注入到其他类中时启动引入流程，默认是懒汉式。**  
+
 1. 会先根据配置参数组装成 URL ，一般而言我们都会配置注册中心，所以会构建`RegistryDirectory`向注册中心注册消费者的信息，并且订阅提供者、配置、路由等节点。
-2. 得知提供者的信息之后会进入 Dubbo 协议的引入，会创建 Invoker ，期间会包含 NettyClient，来进行远程通信，最后通过 Cluster 来包装 Invoker，默认是 FailoverCluster，最终返回代理类。
+2. 得知提供者的信息之后会进入 Dubbo 协议的引入，会创建 Invoker，期间会包含 NettyClient，来进行远程通信，最后通过 Cluster 来包装 Invoker，默认是 FailoverCluster，最终返回代理类。
+
 **注：**  
+
 * Cluster是Dubbo的路由层，封装多个提供者的路由及负载均衡，并桥接注册中心，以 Invoker 为中心，扩展接口为 Cluster, Directory, Router, LoadBalance
 * Failover Cluster是故障转移集群
 
