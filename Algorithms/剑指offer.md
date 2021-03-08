@@ -1292,3 +1292,206 @@ public class Codec {
 // Codec codec = new Codec();
 // codec.deserialize(codec.serialize(root));
 ```
+
+
+
+### 38. 字符串的排列
+dfs，先排序，以便去除重复字符串。去除方法是，在遍历DFS时，如果当前字符和前一个字符一样，且前一个字符在当前dfs层级才被第一次使用，那么当前字符就跳过。  
+```
+class Solution {
+    
+    List<String> res;
+    char[] ch;
+    int len;
+    public String[] permutation(String s) {
+        res = new ArrayList<>();
+        ch = s.trim().toCharArray();
+        Arrays.sort(ch);
+        len = ch.length;
+        boolean[] used = new boolean[len];
+
+        dfs(0, used, "");
+        return res.toArray(new String[res.size()]);
+    }
+
+    private void dfs(int cur, boolean[] used, String s) {
+        // System.out.println(s);
+        if (cur == len) {
+            res.add(s);
+            return;
+        }
+
+        for (int i = 0; i < len; i++) {
+            // 注意处理不能有重复答案
+            if (used[i] || (i > 0 && ch[i] == ch[i - 1] && !used[i - 1])) {
+                continue;
+            }
+            used[i] = true;
+            dfs(cur + 1, used, s + ch[i]);
+            used[i] = false;
+        }
+    }
+}
+```
+### 39. 数组中出现次数超过一半的数字
+答案数字数量超过一半，那么将数组排序后，一半位置的数字一定是答案
+```
+class Solution {
+    public int majorityElement(int[] nums) {
+        Arrays.sort(nums);
+        return nums[nums.length / 2];
+    }
+}
+```
+### 40. 最小的k个数
+数据量小的话直接排序速度最快，如果数据量特别大，就用堆  
+```
+class Solution {
+    public int[] getLeastNumbers(int[] arr, int k) {
+        int[] res = new int[k];
+        Arrays.sort(arr);
+        for (int i = 0; i < k; i++) {
+            res[i] = arr[i];
+        }
+        return res;
+    }
+}
+```
+
+### 41. 数据流中的中位数
+一个大顶堆，一个小顶堆。维持两个的大小总是相等或者差1.  这里我们维护小顶堆大一点。  
+当来了新num，如果堆大小相等，则应该插入小顶堆，插入方法是，先插入大顶堆，这时大顶堆溢出的元素插入小顶堆；
+如果小顶堆比较大，则直接插入大顶堆。  
+最终的中位数结果，比较两个堆的大小，如果大小相等，则中位数是两个堆顶元素的平均；否则是小顶堆的堆顶。  
+```
+class MedianFinder {
+    PriorityQueue<Integer> minQueue;
+    PriorityQueue<Integer> maxQueue;
+    /** initialize your data structure here. */
+    public MedianFinder() {
+        // 小顶堆，保存大的一半
+        minQueue = new PriorityQueue<>();
+        // 大顶堆，保存小的一半
+        maxQueue = new PriorityQueue<>((x, y) -> y - x);
+    }
+    
+    public void addNum(int num) {
+        if (minQueue.size() <= maxQueue.size()) {
+            maxQueue.offer(num);
+            minQueue.offer(maxQueue.poll());
+        } else {
+            minQueue.offer(num);
+            maxQueue.offer(minQueue.poll());
+        }
+    }
+    
+    public double findMedian() {
+        return minQueue.size() == maxQueue.size() ? (minQueue.peek() + maxQueue.peek()) / 2.0 : minQueue.peek();
+    }
+}
+
+/**
+ * Your MedianFinder object will be instantiated and called as such:
+ * MedianFinder obj = new MedianFinder();
+ * obj.addNum(num);
+ * double param_2 = obj.findMedian();
+ */
+```
+### 42. 连续子数组的最大和
+动态规划，dp[i]记录当前数字为结尾时，连续子数组的最大和。  
+```
+class Solution {
+    public int maxSubArray(int[] nums) {
+        int len = nums.length;
+        int[] dp = new int[len];
+
+        dp[0] = nums[0];
+        int max = dp[0];
+        for (int i = 1; i < len; i++) {
+            int tmp = dp[i - 1] + nums[i];
+            
+            if (tmp < nums[i]) {
+                dp[i] = nums[i];
+            } else {
+                dp[i] = tmp;
+            }
+            max = Math.max(max, dp[i]);
+        }
+        return max;
+    }
+}
+```
+
+### 43. 1～n 整数中 1 出现的次数
+所有1出现的次数 = 个位1出现次数 + 十位1出现次数 + 百位1出现次数 + 。。。 + 最高位1出现次数  
+将数字按照当前统计的位，分为high，cur，low  
+当前位1出现次数有三种情况：  
+1. 当前位是0：1出现次数为high * digit
+2. 当前位是1：1出现次数为high * digit + low + 1
+3. 当前位是其他：1出现次数为（high + 1） * digit
+累加即可  
+```
+class Solution {
+    public int countDigitOne(int n) {
+        int low = 0, high = n / 10;
+        int cur = n % 10;
+        int digit = 1;
+        int result = 0;
+
+        while (high != 0 || cur != 0) {
+            if (cur == 0) {
+                result += high * digit;
+            } else if (cur == 1) {
+                result += high * digit + low + 1;
+            } else {
+                result += (high + 1) * digit;
+            }
+            digit *= 10;
+            cur = high % 10;
+            high = high / 10;
+            low = n % digit;
+
+        } 
+        return result;
+    }
+}
+```
+
+### 44.数字序列中某一位的数字
+先统计在多少位的数字范围中出现，然后统计在这个位数的哪一个数字中出现，最后统计在这个数字的第几位。  
+
+```
+class Solution {
+    public int findNthDigit(int n) {
+        int digit = 1;
+        long start = 1;
+        long count = 9;
+
+        while (n > count) {
+            n -= count;
+            digit += 1;
+            start *= 10;
+            count = 9 * start * digit;
+        }
+		// 是从start开始的第(n - 1) / digit个数字，大小就是num
+        long num = start + (n - 1) / digit;
+		// num的第(n - 1) % digit位
+        return String.valueOf(num).charAt((n - 1) % digit) - '0';
+    }
+}
+```
+
+### 45. 把数组排成最小的数
+字符串排序，自定义比较器，排序规则是，前拼接后，小于后拼接前  
+```
+class Solution {
+    public String minNumber(int[] nums) {
+        List<String> list = new ArrayList<>();
+        for (int i : nums) {
+            list.add(String.valueOf(i));
+        }
+        list.sort((o1, o2) -> (o1 + o2).compareTo(o2 + o1));
+        return String.join("", list);
+    }
+}
+```
