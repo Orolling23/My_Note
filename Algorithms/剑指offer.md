@@ -1495,3 +1495,851 @@ class Solution {
     }
 }
 ```
+
+### 46.把数字翻译成字符串
+跟青蛙跳台阶类似。  
+只有当前两个数字是[10, 25]之间时，才能够合在一起翻译，注意'06'这样的情况是不能作为一体翻译的  
+```
+class Solution {
+    public int translateNum(int num) {
+        if (num < 10) {
+            return 1;
+        }
+        char[] nums = String.valueOf(num).toCharArray();
+        int len = nums.length;
+        int[] dp = new int[len];
+
+        dp[0] = 1;
+        if (nums[0] == '1' || (nums[0] == '2' && nums[1] <= '5')) {
+            dp[1] = 2;
+        } else {
+            dp[1] = 1;
+        }
+
+        for (int i = 2; i < len; i++) {
+            if (nums[i - 1] == '1' || (nums[i - 1] == '2' && nums[i] <= '5')) {
+                dp[i] = dp[i - 1] + dp[i - 2];
+            } else {
+                dp[i] = dp[i - 1];
+            }
+            
+        }
+
+        return dp[len - 1];
+    }   
+}
+```
+
+### 47. 礼物的最大价值
+动态规划，二维数组记录一下即可  
+```
+class Solution {
+    public int maxValue(int[][] grid) {
+        if (grid.length == 0 || grid[0].length == 0) {
+            return 0;
+        }   
+        int m = grid.length;
+        int n = grid[0].length;
+
+        int[][] dp = new int[m][n];
+        dp[0][0] = grid[0][0];
+
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == 0 && j == 0) continue;
+                if (i == 0) {
+                    // 初始化第一行
+                    dp[i][j] = dp[i][j - 1] + grid[i][j]; 
+                } else if (j == 0) {
+                    // 初始化第一列
+                    dp[i][j] = dp[i - 1][j] + grid[i][j]; 
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j] + grid[i][j], dp[i][j - 1] + grid[i][j]);
+                }
+            }
+        }
+        return dp[m - 1][n - 1];
+    }
+}
+```
+
+### 48. 最长不含重复字符的子字符串
+滑动窗口。 开一个Set记录窗口中已经出现的字符，当窗口中碰到重复字符，则从窗口左边开始移除字符，直到把重复字符移除掉，即收缩窗口的过程；没有碰到重复字符则窗口向右扩展，直到最后。  
+```
+class Solution {
+    public int lengthOfLongestSubstring(String s) {
+        if (s.length() == 0) return 0;
+        int res = 0;
+        // 窗口左
+        int start = 0;
+        // 窗口右
+        int i = 0;
+        Set<Character> set = new HashSet<>();
+        
+        while (i < s.length()) {
+            char cur = s.charAt(i);
+            while (set.contains(cur)) {
+                set.remove(s.charAt(start++));
+            }
+
+            set.add(cur);
+            res = Math.max(res, i - start + 1);
+            i++;
+        }
+
+        return res;
+    }
+}
+```
+
+### 49. 丑数
+既然要找只有2，3，5为因数的数，那么可以用前面的数，乘以2，3，5，看哪个数更小，小的那个作为本次添加的对象。2，3，5分别记录前一次乘过的数字。  
+```
+class Solution {
+    public int nthUglyNumber(int n) {
+        int[] dp = new int[n];
+        dp[0] = 1;
+        int p2 = 0, p3 = 0, p5 = 0;
+        for (int i = 1; i < n; i++) {
+            int tmp = Math.min(Math.min(dp[p2] * 2, dp[p3] * 3), dp[p5] * 5);
+            dp[i] = tmp;
+            if (tmp == dp[p2] * 2) {
+                p2++;
+            }
+            if (tmp == dp[p3] * 3) {
+                p3++;
+            }
+            if (tmp ==  dp[p5] * 5) {
+                p5++;
+            }
+        }
+        return dp[n - 1];
+    }
+}
+```
+
+### 50. 第一个只出现一次的字符
+利用HashMap即可，可以用char数组作为字符出现的顺序，也可以利用LinkedHashMap的顺序性记录顺序。  
+```
+class Solution {
+    public char firstUniqChar(String s) {
+        Map<Character, Integer> map = new LinkedHashMap<>();
+
+        for (char i : s.toCharArray()) {
+            map.put(i, map.getOrDefault(i, 0) + 1);
+        }
+
+        for (char c : map.keySet()) {
+            if (map.get(c) == 1) {
+                return c;
+            }
+        }
+        return ' ';
+    }   
+}
+```
+
+### 51. 数组中的逆序对
+暴力法超时。  
+逆序数可以用归并排序分治来做，方法是:
+* 分治左右数组
+* 在合并时，如果出现了左边数组的数字放在右边，右边数组的数字放在左边的情况，那么增加一次res，增加的数量是**左边子数组剩余还没有合并的数字的数量**，因为左边剩余的数字都比右边当前添加的那个数字大。  
+```
+class Solution {
+    // 全局变量记录结果
+    int res = 0;
+
+    public int reversePairs(int[] nums) {
+        if (nums.length < 2) return 0;
+
+        sort(nums);
+        return res;
+    }
+
+    private void sort(int[] nums) {
+        int[] tmp = new int[nums.length];
+        sort(nums, tmp, 0, nums.length - 1);
+    }
+
+    private void sort(int[] nums, int[] tmp, int left, int right) {
+        if (left < right) {
+            int mid = left + (right - left) / 2;
+            sort(nums, tmp, left, mid);
+            sort(nums, tmp, mid + 1, right);
+            merge(nums, tmp, left, mid, right);
+        }
+    }
+
+    private void merge(int[] nums, int[] tmp, int left, int mid, int right) {
+        int i = left;
+        int j = mid + 1;
+        int t = 0;
+        while (i <= mid && j <= right) {
+            if (nums[i] <= nums[j]) {
+                tmp[t++] = nums[i++];
+            } else {
+                tmp[t++] = nums[j++];
+                // 这里统计逆序数，逆序数的个数是，左边子数组剩余没有合并的数字的数量  
+                res += mid - i + 1;
+            }
+        }
+
+        while (i <= mid) {
+            tmp[t++] = nums[i++];
+        }
+
+        while (j <= right) {
+            tmp[t++] = nums[j++];
+        }
+
+        t = 0;
+        while (left <= right) {
+            nums[left++] = tmp[t++];
+        }
+    }
+}
+```
+
+### 52. 两个链表的第一个公共节点
+方法一：set记录，很慢
+```
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode(int x) {
+ *         val = x;
+ *         next = null;
+ *     }
+ * }
+ */
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+        Set<ListNode> set = new HashSet<>();
+
+        ListNode ptr = headA;
+        while (ptr != null) {
+            set.add(ptr);
+            ptr = ptr.next;
+        }
+        
+        ptr = headB;
+        while (ptr != null) {
+            if (set.contains(ptr)) {
+                return ptr;
+            }
+            ptr = ptr.next;
+        }
+        return null;
+    }
+}
+```
+
+**方法二：双指针找交叉节点**
+```
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode(int x) {
+ *         val = x;
+ *         next = null;
+ *     }
+ * }
+ */
+public class Solution {
+    public ListNode getIntersectionNode(ListNode headA, ListNode headB) {
+        ListNode ptr1 = headA;
+        ListNode ptr2 = headB;
+        ListNode result = null;
+        while (ptr1 != null && ptr2 != null) {
+            if (ptr1 == ptr2) {
+                return ptr1;
+            }
+
+            ptr1 = ptr1.next;
+            ptr2 = ptr2.next;
+        }
+
+        while (ptr1 != null) {
+            ptr1 = ptr1.next;
+            headA = headA.next;
+        }
+
+        while (ptr2 != null) {
+            ptr2 = ptr2.next;
+            headB = headB.next;
+        }
+
+        while (headA != null && headB != null) {
+            if (headA == headB) {
+                return headA;
+            }
+
+            headA = headA.next;
+            headB = headB.next;
+        }
+        return null;
+    }
+}
+```
+
+### 53 - I. 在排序数组中查找数字 I
+二分查找。找到目标数字之后，往两边扩展计数即可。  
+```
+class Solution {
+    public int search(int[] nums, int target) {
+
+        // Arrays.sort(nums);
+        int res = 0;
+        int left = 0;
+        int right = nums.length - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            if (nums[mid] < target) {
+                left = mid + 1;
+            } else if (nums[mid] > target) {
+                right = mid - 1;
+            } else {
+                int ptr = mid;
+                while (ptr >= left) {
+                    if (nums[ptr--] == target) {
+                        res++;
+                    }
+                }
+
+                ptr = mid + 1;
+                while (ptr <= right) {
+                    if (nums[ptr++] == target) {
+                        res++;
+                    }
+                }
+                break;
+            }
+        } 
+        return res;
+    }
+}
+```
+
+### 53 - II. 0～n-1中缺失的数字
+二分查找。  
+将数组分为两部分，没有缺失的左子数组和有缺失的右子数组，mid查找右子数组的首位元素。
+i <= j作为循环条件，循环跳出前一步，一定是i == j == m，此时三者应当都指向的是右子数组的首位。当循环跳出时，i > j，那么此时i指向右子数组首位，即为结果  
+
+
+```
+class Solution {
+    public int missingNumber(int[] nums) {
+        int left = 0;
+        int right = nums.length - 1;
+        int mid = 0;
+        while (left <= right) {
+            mid = left + (right - left) / 2;
+            if (nums[mid] == mid) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            }
+        }
+        
+        return left;
+    }
+}
+```
+
+### 54. 二叉搜索树的第k大节点
+二叉搜索树中，中序遍历的结果为递增结果；则中序遍历的倒序为递减结果。  
+中序遍历是左，中，右的顺序，那逆序是右，中，左。递归方法实现  
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    int k;
+    int res;
+
+    public int kthLargest(TreeNode root, int k) {
+        this.k = k;
+        res = 0;
+        dfs(root);
+        return res;
+    }
+
+    private void dfs(TreeNode node) {
+        if (node == null || k == 0) return;
+        dfs(node.right);
+        if (--k == 0) {
+            res = node.val;
+            return;
+        }
+        dfs(node.left);
+    }
+}
+```
+
+### 55 - I. 二叉树的深度
+深度优先搜索即可  
+
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public int maxDepth(TreeNode root) {
+        return dfs(root, 1);
+    }
+
+    private int dfs(TreeNode node, int depth) {
+        if (node == null) {
+            return depth - 1;
+        }
+
+        if (node.left == null && node.right == null) {
+            return depth;
+        }
+
+        return Math.max(dfs(node.left, depth + 1), dfs(node.right, depth + 1));
+    }
+}
+```
+
+### 55 - II. 平衡二叉树
+深度优先搜索。让-1作为左右不平衡的标志，如果遍历过程中出现-1，则说明下面已经有子树不平衡了，其他的遍历过程直接返回-1即可。  
+
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public boolean isBalanced(TreeNode root) {
+        if (root == null) {
+            return true;
+        }
+        return dfs(root, 1) != -1;
+    }
+
+    private int dfs(TreeNode node, int depth) {
+        if (node == null) {
+            return depth - 1;
+        }
+
+        // if (node.left == null && node.right == null) return depth;
+
+        int left = dfs(node.left, depth + 1);
+        int right = dfs(node.right, depth + 1);
+
+        return left != -1 && right != -1 && Math.abs(left - right) <= 1 ? Math.max(left, right) : -1;
+    }
+}
+
+```
+
+### 56 - I. 数组中数字出现的次数
+方法一：排序后比较，速度较慢
+```
+class Solution {
+    public int[] singleNumbers(int[] nums) {
+        Arrays.sort(nums);
+        int[] res = new int[2];
+        int k = 0;
+        if (nums[0] != nums[1]) res[k++] = nums[0];
+        
+        for (int i = 1; i < nums.length - 1; i++) {
+            if (k == 2) return res;
+            if (nums[i] != nums[i - 1] && nums[i] != nums[i + 1]) {
+                res[k++] = nums[i];
+            }
+        }
+
+        if (k < 2) res[k] = nums[nums.length - 1];
+        return res;
+    }
+}
+```
+
+**方法二：位运算**，直接看注释   
+
+```
+class Solution {
+    public int[] singleNumbers(int[] nums) {
+        int sum = nums[0];
+        for (int i = 1; i < nums.length; i++) {
+            sum ^= nums[i];
+        }
+
+        int mask = 1;
+        // 因为有两个不同的数字，所以肯定至少有一位异或的结果是1
+        while ((sum & mask) == 0) mask <<= 1;
+
+        int a = 0;
+        int b = 0;
+
+        for (int num : nums) {
+            // 根据num的mask位是0还是不等于0分为两组，相同的数字一定会被分在同一组，两组分别异或在一起，得到的肯定是结果
+            if ((num & mask) == 0) {
+                a ^= num;        
+            } else {
+                b ^= num;
+            }
+        }
+        return new int[]{a, b};
+    }
+}
+```
+
+### 56 - II. 数组中数字出现的次数 II
+位运算，既然每个数字出现三次，那么统计每个位上1出现的次数，如果出现4次，那么结果的这个位必然是1。  
+
+```
+class Solution {
+    public int singleNumber(int[] nums) {
+        int[] count = new int[32];
+
+        for (int num : nums) {
+            for (int i = 0; i < 32; i++) {
+                count[i] += (num & 1);
+                num >>>= 1;
+            }
+        }
+
+        int res = 0;
+        for (int i = 31; i >= 0; i--) {
+            // 先左移，因为要先空出符号位
+            res <<= 1;
+            // 这里用+= 也可以，但是|=更快
+            res |= count[i] % 3;
+        }
+        return res;
+    }
+}
+```
+
+### 57. 和为s的两个数字
+双指针，从两头往中间走，大了就收缩右边，小了就收缩左边  
+
+```
+class Solution {
+    public int[] twoSum(int[] nums, int target) {
+        int left = 0;
+        int right = nums.length - 1;
+
+        while (left < right) {
+            int sum = nums[left] + nums[right];
+            if (sum == target) return new int[]{nums[left], nums[right]};
+            else if (sum < target) {
+                left++;
+            } else {
+                right--;
+            }
+        }
+        return new int[]{-1, -1};
+    }
+}
+```
+
+### 57 - II. 和为s的连续正数序列
+滑动窗口。记录滑动窗口的和，如果小了就向右扩展，大了就收缩左边  
+```
+class Solution {
+    public int[][] findContinuousSequence(int target) {
+        int left = 1;
+        int right = 1;
+        int sum = 1;
+
+        List<int[]> list = new ArrayList<>();
+        int maxLen = 0;
+        
+        while (right < target) {
+            if (sum == target) {
+                int[] tmp = new int[right - left + 1];
+                for (int i = left; i <= right; i++) {
+                    tmp[i - left] = i;
+                }
+                list.add(tmp);
+                maxLen = Math.max(maxLen, tmp.length);
+                sum -= left;
+                left++;
+            }
+            else if (sum < target) {
+                right++;
+                sum += right;
+            } else {
+                sum -= left;
+                left++;
+            }
+        }
+        // 注意这里List转数组的API
+        return list.toArray(new int[list.size()][]);
+    }
+}
+```
+
+### 58 - I. 翻转单词顺序
+先用空格分割字符串，分割出的结果不是空格或者空的就拼接  
+```
+class Solution {
+    public String reverseWords(String s) {
+        String[] ss = s.trim().split(" ");
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = ss.length - 1; i >= 0; i--) {
+            if (ss[i].equals(" ") || ss[i].equals("")) continue;
+            else {
+                sb.append(ss[i]);
+                if (i != 0) sb.append(" ");
+            }
+            // System.out.println(sb.toString());
+        }
+        return sb.toString();
+    }
+}
+```
+
+### 58 - II. 左旋转字符串
+直接把左半部分截下来拼上即可  
+
+```
+class Solution {
+    public String reverseLeftWords(String s, int n) {
+        if (n > s.length()) {
+            return s;
+        } else if (n == s.length()) {
+            return s;
+        } 
+
+        String front = s.substring(0, n);
+        return s.substring(n, s.length()) + front;
+    }
+}
+```
+
+### 59 - I. 滑动窗口的最大值
+**双端队列的典型题。**维持一个双端队列，里面存储当前i为开头时，窗口中的最大值递减序列。  
+当最大值滑出窗口，则删除队头元素；当新元素滑入窗口时，将其添加进双端队列，并删除队尾所有小于当前新元素的值，以维护双端队列递减。  
+这里双端队列递减的意义是，每次窗口移动，滑出一个元素，而窗口最大值一直在队列中。  
+
+```
+class Solution {
+    public int[] maxSlidingWindow(int[] nums, int k) {
+        if (nums.length == 0 || k == 0) return new int[0];
+        Deque<Integer> deque = new ArrayDeque<>();
+        int[] res = new int[nums.length - k + 1];
+        // 未形成窗口
+        for(int i = 0; i < k; i++) {
+            while(!deque.isEmpty() && deque.peekLast() < nums[i])
+                deque.removeLast();
+            deque.addLast(nums[i]);
+        }
+        res[0] = deque.peek();
+        // 形成窗口后
+        for (int i = 1; i < nums.length - k + 1; i++) {
+            // System.out.println(deque.toString());
+            if (nums[i - 1] == deque.peekFirst()) {
+                deque.removeFirst();
+            }
+
+            while (!deque.isEmpty() && deque.getLast() < nums[i + k - 1]) {
+                deque.removeLast();
+            }
+            deque.addLast(nums[i + k - 1]);
+            res[i] = deque.peekFirst();
+        }
+        return res;
+    }
+}
+```
+
+### 59 - II. 队列的最大值
+跟上一题一样，双端队列维护最大值  
+
+```
+class MaxQueue {
+    
+    Deque<Integer> maxDeque;
+    Queue<Integer> queue;
+    
+    public MaxQueue() {
+        maxDeque = new ArrayDeque<>();
+        queue = new ArrayDeque<>();
+    }
+    
+    public int max_value() {
+        if (queue.isEmpty()) return -1;
+        return maxDeque.peekFirst();
+    }
+    
+    public void push_back(int value) {
+        queue.offer(value);
+        while (!maxDeque.isEmpty() && maxDeque.getLast() < value) {
+            maxDeque.removeLast();
+        }
+        maxDeque.offer(value);
+    }
+    
+    public int pop_front() {
+        if (queue.isEmpty()) return -1;
+        int value = queue.poll();
+        if (maxDeque.peek() == value) {
+            maxDeque.poll();
+        }
+        return value;
+    }   
+}
+
+/**
+ * Your MaxQueue object will be instantiated and called as such:
+ * MaxQueue obj = new MaxQueue();
+ * int param_1 = obj.max_value();
+ * obj.push_back(value);
+ * int param_3 = obj.pop_front();
+ */
+```
+
+### 60. n个骰子的点数
+动态规划。  投n颗色子，所有可能的点数情况是6 * n - (n - 1)，所有可能投出的每颗色子点数组合数量是6^n，也就是每种点数情况对应多种组合。  
+
+当前投第n颗色子时，每个点数被投出的组合数，是n-1颗色子投递出的点数演变来的。  
+
+比如当前第二颗色子投出的10点，可能是第一颗色子4 + 第二颗色子6，5 + 5， 6 + 4。 那么想到动态规划。  
+
+定义dp状态：第一维记录当前色子投递的颗数，第二维记录色子投每种点数的组合数。  
+
+状态转移：  
+```
+for (第n枚骰子的点数 i = 1; i <= 6; i ++) {
+    dp[n][j] += dp[n-1][j - i]
+}
+```
+初始化：第一次投递色子1~6每种组合数都是1.  
+
+```
+class Solution {
+    public double[] dicesProbability(int n) {
+        // 第一维是扔了多少枚色子
+        // 第二维是扔中每一点的组合数
+        int[][] dp = new int[n + 1][6 * n + 1];
+
+        for (int i = 1; i <= 6; i++) {
+            dp[1][i] = 1;
+        }
+
+        // i控制扔第几枚色子
+        for (int i = 2; i <= n; i++) {
+            // j控制当前投递色子的最终累加点数
+            for (int j = i; j <= 6 * i; j++) {
+                // cur控制与上一枚色子投递完的状态之间的转换
+                for (int cur = 1; cur <= 6; cur++) {
+                    if (j - cur <= 0) continue; 
+                    dp[i][j] += dp[i - 1][j - cur];
+                }
+            }
+        }
+        
+        double[] res = new double[5 * n + 1];
+        int sum = 0;
+        for (int i = n; i <= 6 * n; i++) {
+            sum += dp[n][i];
+        }
+
+        // System.out.println(Arrays.deepToString(dp));
+        for (int i = n; i <= 6 * n; i++) {
+            res[i - n] = dp[n][i] / (double)sum;
+        }
+        return res;
+    }
+}
+```
+
+由于dp每一行只由上一行演变来，所以优化空间，只定义两个dp数组，交替演变.此时空间复杂度由原本的n^2转为O(n)  
+
+```
+class Solution {
+    public double[] dicesProbability(int n) {
+        // 第一维是扔了多少枚色子
+        // 第二维是扔中每一点的组合数
+        int[] dp = new int[7];
+
+        for (int i = 1; i <= 6; i++) {
+            dp[i] = 1;
+        }
+
+        // i控制扔第几枚色子
+        for (int i = 2; i <= n; i++) {
+            int[] tmp = new int[i * 6 + 1];
+            // j控制当前投递色子的最终累加点数
+            for (int j = i; j <= 6 * i; j++) {
+                // cur控制与上一枚色子投递完的状态之间的转换
+                for (int cur = 1; cur <= 6; cur++) {
+                    if (j - cur <= 0 || j - cur >= dp.length) continue; 
+                    tmp[j] += dp[j - cur];
+                }
+            }
+            dp = tmp;
+        }
+        
+        double[] res = new double[5 * n + 1];
+        int sum = 0;
+        for (int i = n; i <= 6 * n; i++) {
+            sum += dp[i];
+        }
+
+        // System.out.println(Arrays.deepToString(dp));
+        for (int i = n; i <= 6 * n; i++) {
+            res[i - n] = dp[i] / (double)sum;
+        }
+        return res;
+    }
+}
+```
+
+### 61. 扑克牌中的顺子
+先排序，然后记录有几个0，可以替代几个任意牌。  
+
+然后顺序遍历，前后两个比较，有几种不满足顺子的情况：
+1. 前后两张牌相等
+2. 前后两张牌差距过大，大于了替代牌的数量
+
+```
+class Solution {
+    public boolean isStraight(int[] nums) {
+        Arrays.sort(nums);
+        int zeroCount = 0;
+        
+        for (int i = 0; i < nums.length; i++) {
+            if (nums[i] == 0) {
+                zeroCount++;
+                continue;
+            }
+
+            if (i < nums.length - 1) {
+                if (nums[i] == nums[i + 1]) return false;
+                if (nums[i] != nums[i + 1] - 1 && zeroCount < nums[i + 1] - nums[i] - 1) return false;
+            }
+        }
+        return true;
+    }
+}
+```
+
+### 62. 圆圈中最后剩下的数字
