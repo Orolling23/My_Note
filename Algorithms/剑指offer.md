@@ -2343,3 +2343,254 @@ class Solution {
 ```
 
 ### 62. 圆圈中最后剩下的数字
+方法一：用链表模拟，超时  
+
+```
+class Solution {
+    public int lastRemaining(int n, int m) {
+        List<Integer> list = new LinkedList<>();
+        int ptr = 0;
+
+        for (int i = 0; i < n; i++) {
+            list.add(i);
+        }
+
+        while (n > 1) {
+            ptr = (ptr + m - 1) % n;
+            list.remove(ptr);
+            n--;
+        }
+        return list.get(0);
+    }
+}
+```
+
+**方法二：约瑟夫环，数学解法**  
+
+我们把每一轮删掉一个数字看作把删掉数字之后的数字挪到数组最前面。最后剩下的一个数字下标是0，我们可以反推，经过反推，它上一轮的位置是`(当前index + m) % 上一轮剩余数字的个数`，一直反推到数组长度为n  
+
+```
+class Solution {
+    public int lastRemaining(int n, int m) {
+        int res = 0;
+        for (int i = 2; i <= n; i++) {
+            res = (res + m) % i;
+        }
+        return res;
+    }
+}
+```
+
+### 63.股票的最大利润
+动态规划，dp数组记录当天卖出的最大收益。  
+
+最大收益 = 当前位置股票的价格 - 前面最低的买入价格  
+
+所以设置一个变量cheap记录买入的最低价格  
+
+```
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices.length == 0) return 0;
+        int len = prices.length;
+        
+        int[] dp = new int[len];
+        dp[0] = 0;
+        int cheap = 0;
+        int res = 0;
+        for (int i = 1; i < len; i++) {
+            if (prices[i] < prices[cheap]) {
+                cheap = i;
+            }
+
+            dp[i] = prices[i] - prices[cheap];
+
+            res = Math.max(res, dp[i]);
+        }
+        return res;
+    }
+}
+```
+
+### 64. 求1+2+…+n 
+普通递归，必须要用if判断递归结束  
+
+```
+public int sumNums(int n) {
+    if(n == 1) return 1;
+    n += sumNums(n - 1);
+    return n;
+}
+```
+
+可以用**双目运算符的短路效应来判断递归，避免使用if**  
+这里使用A&&B，如果A为false，那么B不会执行，如果A为true，那么B会执行。用n>1作为A，sumNums(n - 1)作为B，则当n<=1的时候，就不再递归执行B。  
+
+```
+class Solution {
+    int res = 0;
+    public int sumNums(int n) {
+        boolean x = n > 1 && sumNums(n - 1) > 0;
+        res += n;
+        return res;
+    }
+}
+
+```
+
+### 65. 不用加减乘除做加法
+最清晰的一个题解  
+
+https://leetcode-cn.com/problems/bu-yong-jia-jian-cheng-chu-zuo-jia-fa-lcof/solution/jin-zhi-tao-wa-ru-he-yong-wei-yun-suan-wan-cheng-j/  
+
+```
+class Solution {
+    public int add(int a, int b) {
+        // 当还有进位的时候就一直循环
+        // 让非进位和 和 进位 相加的过程，与a + b是一样的过程，所以循环计算
+        while (b != 0) {
+            // 不考虑进位的和
+            int sum = a ^ b;
+            // 单独算进位
+            int carry = (a & b) << 1;
+            a = sum;
+            b = carry;
+        }
+        return a;
+    }
+}
+```
+### 66. 构建乘积数组
+开两个数组，一个记录左半边的成绩乘积，一个记录右半边的乘积。  
+```
+class Solution {
+    public int[] constructArr(int[] a) {
+        int len = a.length;
+        if (len == 0) return new int[0];
+        int[] res = new int[len];
+        int[] left = new int[len];
+        int[] right = new int[len];
+        left[0] = 1;
+        right[len - 1] = 1;
+        for (int i = 1; i < len; i++) {
+            left[i] = left[i - 1] * a[i - 1];
+            right[len - 1 - i] = right[len - i] * a[len - i];
+        }
+
+        for (int i = 0; i < len; i++) {
+            if (i == 0) res[i] = right[i];
+            else if (i == len - 1) res[i] = left[i];
+            res[i] = left[i] * right[i];
+        }
+        return res;
+    }
+}
+```
+
+### 67. 把字符串转换成整数
+变成字符数组一位一位的加即可，注意超限的处理。  
+
+```
+class Solution {
+    public int strToInt(String str) {
+        char[] chars = str.trim().toCharArray();
+        int flag = 1;
+        int res = 0;
+        int bndry = Integer.MAX_VALUE / 10;
+        for (int i = 0; i < chars.length; i++) {
+            
+            if (i == 0 && chars[i] == '-') {
+                flag = -1;
+                continue;
+            }
+            if (i == 0 && chars[i] == '+') {
+                flag = 1;
+                continue;
+            }
+
+            if (Character.isDigit(chars[i])) {
+                // 如果要超限了
+                if (res > bndry || (res == bndry && chars[i] > '7')) {
+                    return flag == 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+                }
+                res = res * 10 + (chars[i] - '0');
+            } else {
+                if (res > 0) break;
+                else return 0;
+            }
+        }
+        return res * flag;
+    }
+}
+```
+
+### 68 - I. 二叉搜索树的最近公共祖先
+递归搜索，利用二叉搜索树的性质，如果搜索到的节点等于p或者等于q，那么node是公共祖先。  
+
+如果搜索到的节点值，介于p的值和q的值之间，那么node是公共祖先，否则，根据p、q的值决定左子树还是右子树。  
+
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    TreeNode res;
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        dfs(root, p, q);
+        return res;
+    }
+
+    private void dfs(TreeNode node, TreeNode p, TreeNode q) {
+        if (node == null) return;
+        if (node == p || node == q) {
+            res = node;
+            return;
+        }
+
+        if ((node.val > p.val && node.val < q.val) || (node.val < p.val && node.val > q.val)) {
+            res = node;
+            return;
+        }
+        if (node.val < p.val) {
+            dfs(node.right, p, q);
+        } else {
+            dfs(node.left, p, q);
+        }
+    }
+}
+```
+
+### 68 - II. 二叉树的最近公共祖先
+从上往下递归遍历，三种情况：
+1. root是p或者q，则root就是最近公共节点
+2. p和q都在root的单侧子树上，则继续往下递归这一侧子树
+3. p和q分属root的两侧子树，则root就是最近公共节点
+
+
+```
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {
+        if (root == null || root == p || root == q) return root;
+        TreeNode left = lowestCommonAncestor(root.left, p, q);
+        TreeNode right = lowestCommonAncestor(root.right, p, q);
+        if (left == null) return right;
+        if (right == null) return left;
+        return root;
+    }
+}
+```
