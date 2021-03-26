@@ -224,4 +224,64 @@ https://developer.ibm.com/zh/articles/j-master-spring-transactional-use/
 
 通过注解@Scope
 
+## 说说SpringBoot最核心的注解，它有什么作用？
+### @Configuration
+SpringBoot通过这个注解完全代替了applicationContext.xml文件，**实现了Spring的零配置**  
+
+**常见用法：**
+
+```
+@Configuration 
+public class Config { 
+ 
+    @Bean(initMethod = "init",destroyMethod = "destroy") 
+    public SomeBean someBean() { 
+        return new SomeBean(); 
+    } 
+} 
+```
+
+另外还有一些相关注解也很重要：
+
+* @Bean：用来代替XML李的\<bean\>配置
+* @ImportResource：如果有些通过类的注册方式配置不了的，可以通过这个注解引入额外的 XML 配置文件，有些老的配置文件无法通过 @Configuration 方式配置的非常管用。
+* @Import：用来引入额外的一个或者多个@Configuration修饰的配置文件类
+* @SpringBootConfiguration：这个注解就是 @Configuration 注解的变体，只是用来修饰是 Spring Boot 配置而已，或者可利于 Spring Boot 后续的扩展，源码如下。
+
+### @ComponentScan
+用来代替配置文件中的component-scan配置，开启组件扫描，自动扫描包路径下有指定注解的bean自动装配到bean容器context中。  
+
+这里的指定注解有：@Controller，@Service，@Component，@Repository等  
+
+### @EnableAutoConfiguration
+这是一个复合注解，实现如下  
+
+```
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@AutoConfigurationPackage
+@Import(AutoConfigurationImportSelector.class)
+public @interface EnableAutoConfiguration {
+    String ENABLED_OVERRIDE_PROPERTY = "spring.boot.enableautoconfiguration";
+
+    Class<?>[] exclude() default {};
+
+    String[] excludeName() default {};
+}
+```
+
+其中最关键的要属`@Import(AutoConfigurationImportSelector.class)`，借助`AutoConfigurationImportSelector`，**`@EnableAutoConfiguration`可以帮助SpringBoot应用将所有符合条件的`@Configuration`配置都加载到当前SpringBoot创建并使用的IoC容器。**  
+
+https://blog.csdn.net/zxc123e/article/details/80222967  
+https://www.baeldung.com/spring-componentscan-vs-enableautoconfiguration  
+
+## @SpringBootApplication 内包含哪些注解？
+
+## 讲讲 SpringBoot 的自动配置原理
+
+## Spring解决循环依赖
+## Spring如何实现事务管理的，如何使用
+## Spring的事务传播行为
 
