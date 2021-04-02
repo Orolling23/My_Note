@@ -1,7 +1,9 @@
 # Spring
 ## 什么是Spring框架
-Spirng是一个旨在提高开发效率，以及系统可维护性的开发框架。  
+Spring是一个旨在提高开发效率，以及系统可维护性的开发框架。  
+
 我们一般说 Spring 框架指的都是 Spring Framework，它是很多模块的集合，使用这些模块可以很方便地协助我们进行开发。这些模块是：**核心容器、数据访问/集成,、Web、AOP（面向切面编程）、工具、消息和测试模块**。比如：**Core Container 中的 Core 组件是Spring 所有组件的核心，Beans 组件和 Context 组件是实现IOC和依赖注入的基础，AOP组件用来实现面向切面编程。**  
+
 Spring 官网列出的 Spring 的 6 个特征:  
 
 * 核心技术 ：依赖注入(DI)，AOP，事件(events)，资源，i18n，验证，数据绑定，类型转换，SpEL。
@@ -115,7 +117,7 @@ Spring Bean生命周期分为四个部分：
 3. **初始化**
 4. **销毁**
 
-实际上对应的就是上面的1，2，3，8, 9，11, 12，而其他的几个步骤，就是通过实现Spring提供的接口，而影响Bean生命周期。分为两类接口  
+实际上对应的就是上面的1，2，3，8, 9，11, 12，而**其他的几个步骤，就是通过实现Spring提供的接口，而影响Bean生命周期**。分为两类接口  
 #### 第一类：影响多个Bean的接口
 实现了这些接口的Bean会切入到多个Bean的生命周期中。正因为如此，这些接口的功能非常强大，Spring内部扩展也经常使用这些接口，例如自动注入以及AOP的实现都和他们有关。
 
@@ -133,7 +135,6 @@ Spring Bean生命周期分为四个部分：
 2. 生命周期接口
 * Aware接口的作用就是让我们能够拿到Spring容器中的一些资源，例如BeanNameAware可以拿到BeanName，以此类推。调用时机需要注意：**所有的Aware方法都是在初始化阶段之前调用的！**
 * 生命周期接口：两个生命周期接口`InitializingBean`和`DisposableBean`,用来自己实现bean初始化和销毁两个生命周期
-* 
 
 ## Spring MVC
 * Model1时代，JSP又作表现层又作控制层，少量Java bean来访问数据库，导致控制逻辑和表现逻辑混杂，代码重用率极低；前后端相互依赖，开发效率低，难以测试
@@ -162,44 +163,6 @@ https://mp.weixin.qq.com/s?__biz=Mzg2OTA0Njk0OA==&mid=2247485303&idx=1&sn=9e4626
 * 观察者模式: Spring 事件驱动模型就是观察者模式很经典的一个应用。
 * 适配器模式 :Spring AOP 的增强或通知(Advice)使用到了适配器模式、spring MVC 中也是用到了适配器模式适配Controller。
 * ......
-## Spring 事务
-### Spring管理事务的方式有几种？
-1. 编程式事务，在代码中硬编码（不推荐）
-2. 声明式事务，在配置文件中配置（推荐）
-声明式事务又分为基于XML的和基于注解的声明式事务  
-### Spring事务中五种隔离级别
-* TransactionDefinition.ISOLATION_DEFAULT: 使用后端数据库默认的隔离级别，Mysql 默认采用的 REPEATABLE_READ隔离级别 Oracle 默认采用的 READ_COMMITTED隔离级别.
-* TransactionDefinition.ISOLATION_READ_UNCOMMITTED: 最低的隔离级别，允许读取尚未提交的数据变更，可能会导致脏读、幻读或不可重复读
-* TransactionDefinition.ISOLATION_READ_COMMITTED: 允许读取并发事务已经提交的数据，可以阻止脏读，但是幻读或不可重复读仍有可能发生
-* TransactionDefinition.ISOLATION_REPEATABLE_READ: 对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，可以阻止脏读和不可重复读，但幻读仍有可能发生。
-* TransactionDefinition.ISOLATION_SERIALIZABLE: 最高的隔离级别，完全服从ACID的隔离级别。所有的事务依次逐个执行，这样事务之间就完全不可能产生干扰，也就是说，该级别可以防止脏读、不可重复读以及幻读。但是这将严重影响程序的性能。通常情况下也不会用到该级别。
-### Spring事务中七种事务传播行为
-**支持当前事务的情况**
-
-* TransactionDefinition.PROPAGATION_REQUIRED： 如果当前存在事务，则加入该事务；如果当前没有事务，则创建一个新的事务。
-* TransactionDefinition.PROPAGATION_SUPPORTS： 如果当前存在事务，则加入该事务；如果当前没有事务，则以非事务的方式继续运行。
-* TransactionDefinition.PROPAGATION_MANDATORY： 如果当前存在事务，则加入该事务；如果当前没有事务，则抛出异常。（mandatory：强制性）
-
-**不支持当前事务的情况：**
-
-* TransactionDefinition.PROPAGATION_REQUIRES_NEW： 创建一个新的事务，如果当前存在事务，则把当前事务挂起。
-* TransactionDefinition.PROPAGATION_NOT_SUPPORTED： 以非事务方式运行，如果当前存在事务，则把当前事务挂起。
-* TransactionDefinition.PROPAGATION_NEVER： 以非事务方式运行，如果当前存在事务，则抛出异常。
-
-**其他情况：**
-
-* TransactionDefinition.PROPAGATION_NESTED： 如果当前存在事务，则创建一个事务作为当前事务的嵌套事务来运行；如果当前没有事务，则该取值等价于TransactionDefinition.PROPAGATION_REQUIRED。
-### @Transactional(rollbackFor = Exception.class)注解
-我们知道：Exception分为运行时异常RuntimeException和非运行时异常。事务管理对于企业应用来说是至关重要的，即使出现异常情况，它也可以保证数据的一致性。  
-
-**当@Transactional注解作用于类上时，该类的所有 public 方法将都具有该类型的事务属性，同时，我们也可以在方法级别使用该标注来覆盖类级别的定义。如果类或者方法加了这个注解，那么这个类里面的方法抛出异常，就会回滚，数据库里面的数据也会回滚。**  
-
-在@Transactional注解中如果**不配置rollbackFor属性,那么事务只会在遇到RuntimeException的时候才会回滚,加上rollbackFor=Exception.class,可以让事务在遇到非运行时异常时也回滚。**  
-
-https://developer.ibm.com/zh/articles/j-master-spring-transactional-use/
-
-
-
 ## Spring中Bean的作用域
 
 | 作用域         | 描述                                                         |
@@ -216,7 +179,7 @@ https://developer.ibm.com/zh/articles/j-master-spring-transactional-use/
 
 ### prototype
 
-表示一个 bean 定义对应多个对象实例。Prototype 作用域的 bean 会导致在**每次对该 bean 请求（将其注入到另一个 bean 中，或者以程序的方式调用容器的 getBean() 方法）时都会创建一个新的 bean 实例**。**Prototype 是原型类型，它在我们创建容器的时候并没有实例化，而是当我们获取bean的时候才会去创建一个对象，而且我们每次获取到的对象都不是同一个对象。**
+表示一个 bean 定义对应多个对象实例。Prototype 作用域的 bean 会导致在**每次对该 bean 请求（将其注入到另一个 bean 中，或者以程序的方式调用容器的 getBean() 方法）时都会创建一个新的 bean 实例**。**Prototype 是原型类型，它在我们创建容器的时候并没有实例化，而是当我们获取bean的时候才会去创建一个对象，而且我们每次获取到的对象都不是同一个对象。**  
 
 
 
@@ -226,7 +189,7 @@ https://developer.ibm.com/zh/articles/j-master-spring-transactional-use/
 
 ## 说说SpringBoot最核心的注解，它有什么作用？
 ### @Configuration
-SpringBoot通过这个注解完全代替了applicationContext.xml文件，**实现了Spring的零配置**  
+SpringBoot通过这个注解完全代替了applicationContext.xml文件，**实现了Spring的零配置**    
 
 **常见用法：**
 
@@ -249,7 +212,7 @@ public class Config {
 * @SpringBootConfiguration：这个注解就是 @Configuration 注解的变体，只是用来修饰是 Spring Boot 配置而已，或者可利于 Spring Boot 后续的扩展，源码如下。
 
 ### @ComponentScan
-用来代替配置文件中的component-scan配置，开启组件扫描，自动扫描包路径下有指定注解的bean自动装配到bean容器context中。  
+用来代替配置文件中的component-scan配置，开启组件扫描，自动扫描包路径下有指定注解的bean自动装配到bean容器context中。    
 
 这里的指定注解有：@Controller，@Service，@Component，@Repository等  
 
@@ -281,7 +244,7 @@ https://blog.csdn.net/zxc123e/article/details/80222967
 https://www.baeldung.com/spring-componentscan-vs-enableautoconfiguration  
 
 ## @SpringBootApplication 内包含哪些注解？
-@SpringBootApplication是一个复合注解，其中包括@ComponentScan，@SpringBootConfiguration，@EnableAutoConfiguration  
+@SpringBootApplication是一个复合注解，其中包括@ComponentScan，@SpringBootConfiguration，@EnableAutoConfiguration   
 
 * @SpringBootConfiguration继承自@Configuration，二者功能也一致，**标注当前类是配置类，并会将当前类内声明的一个或多个以@Bean注解标记的方法的实例纳入到srping容器中**，并且实例名就是方法名。
 * @ComponentScan，**扫描当前包及其子包下被@Component，@Controller，@Service，@Repository注解标记的类并纳入到spring容器中进行管理**。是以前的<context:component-scan>（以前使用在xml中使用的标签，用来扫描包配置的平行支持）。
@@ -561,3 +524,12 @@ public interface TransactionStatus{
 | readOnly    | 指定事务是否为只读事务，默认值为 false。                     |
 | rollbackFor | 用于指定能够触发事务回滚的异常类型，并且可以指定多个异常类型。 |
 
+##### @Transactional(rollbackFor = Exception.class)注解
+
+我们知道：Exception分为运行时异常RuntimeException和非运行时异常。事务管理对于企业应用来说是至关重要的，即使出现异常情况，它也可以保证数据的一致性。  
+
+**当@Transactional注解作用于类上时，该类的所有 public 方法将都具有该类型的事务属性，同时，我们也可以在方法级别使用该标注来覆盖类级别的定义。如果类或者方法加了这个注解，那么这个类里面的方法抛出异常，就会回滚，数据库里面的数据也会回滚。**  
+
+在@Transactional注解中如果**不配置rollbackFor属性,那么事务只会在遇到RuntimeException的时候才会回滚,加上rollbackFor=Exception.class,可以让事务在遇到非运行时异常时也回滚。**  
+
+https://developer.ibm.com/zh/articles/j-master-spring-transactional-use/

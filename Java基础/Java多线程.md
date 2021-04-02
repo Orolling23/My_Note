@@ -1,6 +1,12 @@
 # Java多线程
 ## 概述
 * 多线程的核心目的就是提高资源利用率
+* 发挥多处理器的强大能力
+* 令某些问题的建模更加简单
+* 异步事件的简化处理
+* 但同时也会带来一些线程共享资源的安全问题
+* 线程活跃性问题
+* 性能问题
 ## Java内存模型
 ### JMM
 Java内存模型的抽象结构就是那张经典图
@@ -514,6 +520,9 @@ Executor框架主要由三部分组成
 ### Executor框架的成员
 #### ThreadPoolExecutor
 通常使用工厂类Executors创建，可以创建以下三种
+
+> 《阿里巴巴 Java 开发手册》中强制线程池不允许使用 Executors 去创建，而是通过 ThreadPoolExecutor 的方式，这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险  
+
 ##### FixedThreadPool
 固定线程数，使用无界队列LinkedBlockingQueue，由于无界队列，所以maximumPoolSize无效，keepAliveTime也无效，也不会拒绝任务，则拒绝策略也无效。
 ##### SingleThreadExecutor
