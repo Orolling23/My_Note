@@ -1,5 +1,9 @@
 # Mysql索引分析与慢查询排查
 
+> https://tech.meituan.com/2014/06/30/mysql-index.html 重点文章  
+>
+> https://tech.meituan.com/2014/08/20/innodb-lock.html
+
 ## 索引原理
 
 索引，就跟图书的目录一样，是为了快速查询。但在数据库场景中，所面临的情况更复杂，有更多的等值查询、范围查询等。  
@@ -81,7 +85,7 @@ mysql> EXPLAIN SELECT 1;
     　　创建一下索引，然后再用explain 检查一下。
 *  key：显示MySQL实际上要用的索引。
     　　当没有任何索引被用到的时候，这个字段的值就是NULL。
-    　　想要让MySQL强行使用或者忽略在 possible_keys字段中的索引列表，可以在查询语句中使用关键字force index, use index或 ignore index。参考SELECT语法。
+        　　想要让MySQL强行使用或者忽略在 possible_keys字段中的索引列表，可以在查询语句中使用关键字force index, use index或 ignore index。参考SELECT语法。
 * rows：显示MySQL在表中进行查询时必须检查的行数。
 
 ### 索引没起作用的几种情况

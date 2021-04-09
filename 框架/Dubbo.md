@@ -75,6 +75,67 @@ Dubbo 是阿里巴巴开源的一个基于 Java 的 RPC 框架，中间沉寂了
 ## 服务调用异步转同步是怎么做的
 Dubbo默认是异步的，那么服务调用是怎么转为同步的？  
 
+## Dubbo线程模型
+
+> https://zhuanlan.zhihu.com/p/157354148
+>
+> https://www.cnblogs.com/java-zhao/p/7822766.html
+>
+> https://crossoverjie.top/2018/07/04/netty/Netty(2)Thread-model/
+>
+> https://juejin.cn/post/6844903848159477774
+
+**Dubbo使用TCP长连接建立调用者与提供者之间的通信，利用Netty来处理连接。**  
+
+#### Netty的线程模型
+
+![Netty](./Pics/Netty线程模型.png) 
+
+  在Netty中，存在boss线程和worker线程，采取一主多从模式  
+
+* boss线程：负责accept客户端连接，并将接收到的连接注册到一个worker线程上。默认创建单线程的boss线程池（Dubbo每绑定一个端口则开启一个boss线程池）。
+* worker线程池：负责处理注册在其身上的连接上的各种IO事件。默认线程池大小是核数+1
+  * 一个worker线程可以注册多个连接
+  * 一个连接只能注册在一个worker线程上
+
+#### 消息派发
+
+Dubbo使用Netty处理了IO，那么接下来是如何处理业务逻辑的呢？  
+
+如果处理逻辑较为简单，并且不会发起新的I/O请求，那么直接在I/O线程上处理会更快，因为这样减少了线程池调度与上下文切换的开销，毕竟线程切换还是有一定成本的。如果逻辑较为复杂，或者需要发起网络通信，比如查询数据库，则I/O线程必须派发请求到新的线程池进行处理，否则I/O线程会被阻塞，导致处理IO请求效率降低。  
+
+实际上，Dubbo提供了五种派发方式（都通过SPI加载）：  
+
+- **all（AllDispatcher类）**：默认，所有消息都派发到业务线程池，这些消息包括请求、响应、连接事件、断开事件等，响应消息会优先使用对于请求所使用的线程池。
+- **direct（DirectDispatcher类）**：所有消息都不派发到业务线程池，全部在IO线程上直接执行。
+- **message（MessageOnlyDispatcher类）**：只有请求响应消息派发到业务线程池，其他消息如连接事件、断开事件、心跳事件等，直接在I/O线程上执行。
+- **execution（ExecutionDispatcher类）**：只把请求类消息派发到业务线程池处理，但是响应、连接事件、断开事件、心跳事件等消息直接在I/O线程上执行。
+- **connection（ConnectionOrderedDispatcher类）**：在I/O线程上将连接事件、断开事件放入队列，有序地逐个执行，其他消息派发到业务线程池处理。
+
+#### 业务线程模型
+
+完成了业务派发之后，Dubbo是采用了什么线程模型来处理业务事件的呢？  
+
+dubbo处理流程，为了尽量早地释放Netty的I/O线程，某些线程模型会把请求投递到线程池进行异步处理，那么这里所谓的线程池是什么样的线程池呢？  
+
+Dubbo提供了几种扩展的SPI实现：  
+
+- **FixedThreadPool**：（服务端默认）创建一个具有固定个数线程的线程池。core200，max200，队列SynchronousQueue，拒绝策略AbortPolicyWithReport - 打印线程信息jstack，之后抛出异常
+- **LimitedThreadPool**：创建一个线程池，这个线程池中的线程个数随着需要量动态增加，但是数量不超过配置的阈值。另外，空闲线程不会被回收，会一直存在（只增长不收缩）。
+- **EagerThreadPool**：创建一个线程池，在这个线程池中，当所有核心线程都处于忙碌状态时，将创建新的线程来执行新任务，而不是把任务放入线程池阻塞队列。
+- **CachedThreadPool**：（调用端/客户端默认）创建一个自适应线程池，当线程空闲1分钟时，线程会被回收；当有新请求到来时，会创建新线程。
+
+#### 完整线程模型和步骤
+
+![Dubbo线程模型](./Pics/Dubbo线程模型.png)  
+
+**整体步骤：（受限于派发策略，以默认的all为例, 以netty4为例）**
+
+1. 客户端的主线程发出一个请求后获得future，在执行get时进行阻塞等待；
+2. 服务端使用worker线程（netty通信模型）接收到请求后，将请求提交到server线程池中进行处理
+3. server线程处理完成之后，将相应结果返回给客户端的worker线程池（netty通信模型），最后，worker线程将响应结果提交到client线程池进行处理
+4. client线程将响应结果填充到future中，然后唤醒等待的主线程，主线程获取结果，返回给客户端
+
 ## Cluster层的作用
 集群 Cluster 用途是**将多个服务提供者合并为一个 Cluster Invoker**，并将这个 Invoker 暴露给服务消费者。  
 
