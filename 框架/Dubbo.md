@@ -188,7 +188,7 @@ https://blog.csdn.net/luanlouis/article/details/24589193 动态代理要抽时�
 	https://www.cnblogs.com/williamjie/p/9477852.html  
 ## Dubbo 集群容错策略
 集群工作过程可分为两个阶段  
-* 第一个阶段是在服务消费者初始化期间，集群 Cluster 实现类为服务消费者创建 Cluster Invoker 实例，即上图中的 merge 操作。  
+* 第一个阶段是在服务消费者初始化期间，集群 Cluster 实现类为服务消费者创建 Cluster Invoker 实例。  
 
 * 第二个阶段是在服务消费者进行远程调用时。  
 	
@@ -199,9 +199,7 @@ https://blog.csdn.net/luanlouis/article/details/24589193 动态代理要抽时�
 **集群容错策略有以下几种：**
 
 * failover Cluster
-	默认，**失败自动重试其他机器**，常见于读操作。
-* failfast Cluster
-	**一次调用失败则立即失败**，常见于写操作
+	**默认**，**失败自动重试其他机器**，常见于读操作。可配置重试次数
 * failsafe Cluster
 	**出现异常时忽略掉**，常用于不重要的接口调用，比如记录日志。
 * failback Cluster
