@@ -96,9 +96,9 @@ public class AppConfig {
 7. 如果有和加载这个 Bean 的 Spring 容器相关的 `BeanPostProcessor` 对象，执行`postProcessBeforeInitialization() `方法
 8. 如果Bean实现了`InitializingBean`接口，执行`afterPropertiesSet()`方法。
 9. 如果 Bean 在配置文件中的定义包含` init-method `属性，执行指定的方法。
-10. 如果有和加载这个 Bean的 Spring 容器相关的` BeanPostProcessor `对象，执行`postProcessAfterInitialization() `方法
-11. 当要销毁 Bean 的时候，如果 Bean 实现了` DisposableBean `接口，执行` destroy() `方法。
-12. 当要销毁 Bean 的时候，如果 Bean 在配置文件中的定义包含` destroy-method` 属性，执行指定的方法。
+10. 如果有和加载这个 Bean的 Spring 容器相关的` BeanPostProcessor `对象，执行`postProcessAfterInitialization() `方法  
+11. 当要销毁 Bean 的时候，如果 Bean 实现了` DisposableBean `接口，执行` destroy() `方法。  
+12. 当要销毁 Bean 的时候，如果 Bean 在配置文件中的定义包含` destroy-method` 属性，执行指定的方法。  
 
 上面的过程看起来非常复杂，我也不清楚面试是不是要这样回答。下面尽量尝试从原理去理解  
 
@@ -212,7 +212,7 @@ public class Config {
 * @SpringBootConfiguration：这个注解就是 @Configuration 注解的变体，只是用来修饰是 Spring Boot 配置而已，或者可利于 Spring Boot 后续的扩展，源码如下。
 
 ### @ComponentScan
-用来代替配置文件中的component-scan配置，开启组件扫描，自动扫描包路径下有指定注解的bean自动装配到bean容器context中。    
+用来代替配置文件中的component-scan配置，**开启组件扫描，自动扫描包路径下有指定注解的bean自动装配到bean容器context中。**    
 
 这里的指定注解有：@Controller，@Service，@Component，@Repository等  
 
@@ -347,8 +347,6 @@ https://zhuanlan.zhihu.com/p/84267654
 
 **事务能否生效数据库引擎是否支持事务是关键。比如常用的 MySQL 数据库默认使用支持事务的`innodb`引擎。但是，如果把数据库引擎变为 `myisam`，那么程序也就不再支持事务了！**  
 
-
-
 ### 2. 事务的ACID特性
 
 * 原子性
@@ -404,7 +402,7 @@ Spring 框架中，事务管理相关最重要的 3 个接口如下：
 
 ```
 public interface TransactionStatus{
-    boolean isNewTransaction(); // 是否是新的事物
+    boolean isNewTransaction(); // 是否是新的事务
     boolean hasSavepoint(); // 是否有恢复点
     void setRollbackOnly();  // 设置为只回滚
     boolean isRollbackOnly(); // 是否为只回滚
