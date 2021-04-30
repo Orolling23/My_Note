@@ -7,9 +7,9 @@ https://www.cnblogs.com/crazylqy/p/7611069.html
 
 * 连接器：身份认证和权限相关
 * 查询缓存：执行查询语句的时候，会先查查询缓存（8.0版本之后移除，原因是这个功能不太实用）
-* 分析器：如果没有命中缓存，SQL语句会经过分析器，进行词法分析和语法分析，看看你的SQL语句要干嘛，检查语法是否正确
-* 优化器：按照MySQL认为最优的方案去执行。如何选择索引，多表查询时如何选择关联顺序等。
-* 执行器：执行语句，从存储引擎返回数据
+* 分析器：如果没有命中缓存，SQL语句会经过分析器，进行**词法分析和语法分析**，看看你的SQL语句要干嘛，检查语法是否正确
+* 优化器：按照MySQL认为**最优的方案去执行**。如何选择索引，多表查询时如何选择关联顺序等。
+* 执行器：**执行语句，从存储引擎返回数据**
 
 简单来说：
 
@@ -27,7 +27,7 @@ MyISAM是MySQL的默认数据库引擎（5.5版之前）。虽然性能极佳，
 1. **是否支持行级锁** : MyISAM 只有表级锁(table-level locking)，而**InnoDB 支持行级锁(row-level locking)和表级锁**,默认为行级锁。
 2. **是否支持事务和崩溃后的安全恢复**： MyISAM 强调的是性能（但很多情况下并没有InnoDB快），每次查询具有原子性,其执行速度比InnoDB类型更快，但是不提供事务支持。但是InnoDB 提供事务支持，外部键等高级数据库功能。 **具有事务(commit)、回滚(rollback)和崩溃修复能力(crash recovery capabilities)的事务安全(transaction-safe (ACID compliant))型表**。
 3. **是否支持外键**： MyISAM不支持，而InnoDB支持。
-4. **是否支持MVCC**：仅 InnoDB 支持。应对高并发事务, MVCC比单纯的加锁更高效;MVCC只在 READ COMMITTED 和 REPEATABLE READ 两个隔离级别下工作;MVCC可以使用 乐观(optimistic)锁 和 悲观(pessimistic)锁来实现;各数据库中MVCC实现并不统一。推荐阅读：MySQL-InnoDB-MVCC多版本并发控制
+4. **是否支持MVCC**：仅 InnoDB 支持。应对高并发事务, MVCC比单纯的加锁更高效;MVCC只在 READ COMMITTED 和 REPEATABLE READ 两个隔离级别下工作;MVCC可以使用 乐观(optimistic)锁 和 悲观(pessimistic)锁来实现;各数据库中MVCC实现并不统一。
 5. **索引**：MyISAM和InnoDB都时可以使用B+树，**但MyISAM的B+树叶节点的data域存放的是数据记录的地址**，“非聚簇索引”，数据文件和索引文件分离；InnoDB数据文件本身就是索引文件，再根据主索引搜索时，直接找到key所在的节点即可取出数据；在根据辅助索引查找时，则需要先取出主键的值，再走一遍主索引。
 ## 索引
 索引说白了就是数据组织的结构，用什么数据结构组织数据，对应查询和插入就有什么样的特性。  
@@ -101,14 +101,16 @@ InnoDB中，意向锁比较简练，意向锁即为表级别的锁，设计目�
 ### 多版本并发控制MVCC
 指的是一种提高并发的技术，可以理解为行级锁的变种。InnoDB中的实现方式是在**Undo Log**中可以找到数据的历史版本，目的是：**通过历史版本的数据提供给用户*读*（不同的隔离级别可以看到不同版本的历史数据，有些老，有些新），来实现读读并发、读写并发。**  
 * **MVCC只在 READ COMMITTED 和 REPEATABLE READ 两个隔离级别下工作**。其他两个隔离级别够和MVCC不兼容, 因为 READ UNCOMMITTED 总是读取最新的数据行, 而不是符合当前事务版本的数据行。**而 SERIALIZABLE 则会对所有读取的行都加锁**。
-* 而InnoDB实现MVCC的方式是:
+* 而InnoDB中RR级别下实现MVCC的方式是:
 	1. 事务以排他锁的形式修改原始数据
 	2. 把修改前的数据存放于undo log，通过数据表中的隐式字段DB_ROLL_PTR回滚指针与主数据关联，同时undo log中的数据行的回滚指针会指向更早的数据，形成**数据链**
 	3. 修改成功（commit）啥都不做，失败则恢复undo log中的数据（rollback）
 ### 一致性非锁定读
 指InnoDB引擎利用MVCC来读取当前执行时间数据库中行的数据，如果被读取的行正在被DELETE或者UPDATE，**读取操作不会等待X锁的释放，而会区读取行的一个快照数据，通过Undo Log实现**。  
 
-非锁定读极大的提高了数据库的并发性，**是默认的读取方式**，在 READ COMMITTED 和 REPEATABLE READ 两个隔离级别下，InnoDB使用一致性非锁定读。在 READ COMMITTED 级别下，总是读取被锁定行的**最新一份**快照数据；REPEATABLE READ级别下，总是读取**事务开始时的那份**快照数据。  
+非锁定读极大的提高了数据库的并发性，**是默认的读取方式**，在 READ COMMITTED 和 REPEATABLE READ 两个隔离级别下，InnoDB使用一致性非锁定读。在 READ COMMITTED 级别下，总是读取被锁定行的**最新一份**快照数据；REPEATABLE READ级别下，总是读取**事务开始时的那份**快照数据。    
+
+也就是说在READ COMMITTED 级别下，**每次读取都会创建一个新的ReadView**；REPEATABLE READ级别下，**同一个事务中的读取都在同一个ReadView中**
 
 ### 一致性锁定读
 一般，默认配置下，InnoDB引擎的事务隔离级别为REPEATABLE READ，采用一致性非锁定读。但某些特殊情况下，用户需要显式地对数据库读取操作进行加锁以保证数据逻辑的一致性。这时就需要数据库支持加锁语句。  
@@ -156,7 +158,7 @@ LOCK TABLES t WRITE;
 
    * 插入数据全过程中，加表级的AUTO_INC锁，直到INSERT语句执行结束
    * 只在获取AUTO_INCREMENT表列的值时加轻量级锁
-   * 以上两种情况使用哪种，依据InnoDB中innodb_autoinc_lock_mode的配置来选择，可以配置其中一种，或者混合模式（插入记录的数量确定时采用轻量级锁，不确定时采用AUTO_INC锁）。默认采用AUTO_INC锁。
+   * 以上两种情况使用哪种，依据InnoDB中innodb_autoinc_lock_mode的配置来选择，可以配置其中一种，或者混合模式（插入记录的数量确定时采用轻量级锁，不确定时采用AUTO_INC锁）。**默认采用AUTO_INC锁**。
 
    
 
