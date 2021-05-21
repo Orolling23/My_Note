@@ -48,8 +48,11 @@ JVM将其管理的内存划分为以下**七个**区域
 **OOM的几种场景**  
 
 * **Java堆溢出**：利用-Xms和-Xmx设置成一样的20MB防止堆自动扩展，通过参数-XX:HeapDumpOnOurOfMemoryError让虚拟机在OOM时Dump出当前内存的堆转储快照。不断在堆上分配对象，使其OOM。  
+
 * **方法区和运行时常量池溢出**：JDK7之前：String.intern()方法会将新字符串添加到常量池，并返回对象引用，不断开辟新字符串，则会导致OOM。  
-**JDK8开始，字符串常量池移到堆中**，则上面方法不能导致方法区的OOM
+
+  **JDK8开始，字符串常量池移到堆中**，则上面方法不能导致方法区的OOM
+
 * **直接内存溢出**：通过反射Unsafe类，调用其直接分配内存的方法allocateMemory()，导致直接内存溢出。直接内存可通过-XX:MaxDirectMemorySize参数来指定，如果不指定则与Java堆最大值一致。
 
 **StackOverFlow的场景**  
