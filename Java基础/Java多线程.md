@@ -121,6 +121,9 @@ monitor是一个同步工具，是由ObjectMonitor实现的，其中属性记录
 
 当多个线程同时访问一段同步代码时，**首先会进入\_EntryList队列中**，当某个线程获取到对象的monitor后进入\_Owner区域并把monitor中的\_owner变量设置为当前线程，同时monitor中的计数器\_count加1，**若线程调用wait()方法，将释放当前持有的monitor**，\_owner变量恢复为null，\_count自减1，同时该线程**进入\_WaitSet集合中等待被唤醒**。若当前线程执行完毕也将释放monitor(锁)并复位变量的值，以便其他线程进入获取monitor(锁)。
 #### 锁优化
+
+> https://www.zhihu.com/question/53826114 看答案！！！
+
 * 线程阻塞唤醒需要时间长
 * 锁竞争也需要消耗资源，且同一个锁在大多数情况下被同一个线程获取
 * 另外编译器会在加锁范围上对程序员编写的代码进行优化
