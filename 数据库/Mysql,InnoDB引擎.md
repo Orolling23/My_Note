@@ -78,6 +78,7 @@ select  * from trade_info where status = 0 and create_time >= '2020-10-01 00:00:
 select * from trade_info a ,
 
 (select  id from trade_info where status = 0 and create_time >= '2020-10-01 00:00:00' and create_time <= '2020-10-07 23:59:59' order by id desc limit 102120, 20) as b   //这一步走的是索引覆盖扫描，不需要回表
+
  where a.id = b.id;
 ```
 其中也利用了**分而治之**的思想。  
@@ -201,9 +202,9 @@ InnoDB存储引擎中的事务完全符合ACID的特性：
 ### 事务的实现
 隔离性由锁来实现；原子性、一致性、持久性通过redo log重做日志和undo log来实现；redo log保证原子性和持久性；undo log 保证一致性  
 #### 三种日志
-* redo log实现**持久性**。redo log记载着在某个页上做了什么修改，提交时写入redo log buffer，buffer什么时候刷盘有配置供选择。redo log顺序写入，顺序IO写入的速度很快，且记载的是物理变化，文件体积很小，恢复速度很快。  
-* undo log帮助**事务回滚以及MVCC。数据修改**也记录在undo log中，存储逻辑日志，他会记录一条与数据库所作操作**相反**的操作日志，另外还记录着数据修改之前的版本，可以实现MVCC  
-* **binlog记录了数据库表结构和表数据的变更，可以简单理解为存储着每条变更的SQL语句**，用来进行POINT-IN-TIME的恢复以及主从复制环境的建立（事务中用不到），简单来说就是用来复制和恢复数据。例如数据库中的数据修改了，但是用户查询是走ES的，那么ES也需要同步到数据库中的修改，我们就会监听binlog的变更并同步到ES。  
+* redo log实现**持久性**。redo log记载着在某个页上做了什么修改，提交时写入redo log buffer，buffer什么时候刷盘有配置供选择。redo log顺序写入，顺序IO写入的速度很快，且记载的是物理变化，文件体积很小，恢复速度很快。帮助实现持久性。  
+* undo log帮助**事务回滚以及MVCC。数据修改**也记录在undo log中，存储逻辑日志，他会记录一条与数据库所作操作**相反**的操作日志，另外还记录着数据修改之前的版本，可以实现MVCC。帮助实现原子性和隔离性。  
+* **binlog记录了数据库表结构和表数据的变更，可以简单理解为存储着每条变更的SQL语句**，用来进行POINT-IN-TIME的恢复以及主从复制环境的建立（事务中用不到），简单来说就是用来复制和恢复数据。例如数据库中的数据修改了，但是用户查询是走ES的，那么ES也需要同步到数据库中的修改，我们就会监听binlog的变更并同步到ES。用于备份和主从同步。    
 #### 实现持久性
 InnoDB通过 Force Log At Commot 实现事务的持久性，即当事务提交时，**必须先将事务的所有日志写入 redo log 进行持久化**，待事务的Commit操作完成才算完成。这里**重做日志指 redo log 和 undo log**。  
 #### 实现一致性

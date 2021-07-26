@@ -203,7 +203,7 @@ https://blog.csdn.net/luanlouis/article/details/24589193 动态代理要抽时�
 * failsafe Cluster
 	**出现异常时忽略掉**，常用于不重要的接口调用，比如记录日志。
 * failback Cluster
-	**失败了返回一个空结果给服务消费者，然后在后台定时重发**，比较适合于写消息队列这种。
+	**失败了返回一个空结果给服务消费者，然后在后台定时重发**，比较适合于写消息队列这种需要成功但时延要求没那么高的。
 * forking Cluster
 	**并行调用多个 provider** ，只要一个成功就立即返回。
 
