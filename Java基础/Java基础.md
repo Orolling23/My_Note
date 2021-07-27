@@ -59,6 +59,12 @@ public class OverrideTest {
         sun.doSomething();
     }
 }
+
+最后会打印：
+
+Father do something
+
+Sun do something
 ```
 
 #### 形参传基本类型和引用类型的区别
