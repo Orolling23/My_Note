@@ -4,7 +4,7 @@
 
 Java中基本类型有**八种**  
 
-* byte：8位，最大存储数据量是255，存放的数据范围是-128~127之间。
+* byte：8位，最大存储数据量是255，存放的数据范围是-128~127之间。  10000000 ～ 01111111
 * short：16位，最大数据存储量是65536，数据范围是-32768~32767之间。
 * int：32位，最大数据存储容量是2^32 - 1，数据范围是 -2^31 ~ 2^31 - 1
 * long：64位，最大数据存储容量是2的64次方减1，数据范围为 -2^63 ~ 2^63 - 1
@@ -106,8 +106,8 @@ https://www.cnblogs.com/jy107600/p/11464985.html
 
 https://zhuanlan.zhihu.com/p/78249480   
 
-1. 默认equals方法比较内存地址
-2. 默认hashcode方法返回对象的内存地址
+1. 默认equals方法比较内存地址，与==相同
+2. equals为true时，hashcode必须相同，而hashcode相同时，equals不一定为true
 3. hashcode只有在hashmap算hash位置的时候才会用到
 4. 自定义类作为key放入HashMap/HashSet时要重写equals和hashcode，避免出现两个对象内容相同，但内存地址不同，导致hashcode不同，从而在map中put(O1,value)之后，用map.get(O2)获取不到。
 5. 重写equals方法是必须重写hashcode方法，以避免在HashMap中出现两个equals比较相同的对象，却被hash到了两个不同的桶。
