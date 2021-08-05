@@ -31,7 +31,7 @@ https://zhuanlan.zhihu.com/p/94770324
 
 https://www.runoob.com/java/java-override-overload.html
 
-原理：重载是静态分派，发生在编译期；重写是动态分派，发生在运行期  
+原理：重载是静态分派，发生在编译期；重写是动态分派，发生在运行期   
 
 https://blog.csdn.net/dj_dengjian/article/details/80811348. 
 
@@ -87,14 +87,14 @@ Sun do something
 项目中：
 
 1. 对于运行时异常，尽量做好测试，尽量避免
-2. 对于受检异常，需要本地处理的就本地处理，需要抛出的就抛到顶层，Spring项目就写AOP切面统一处理，普通项目就抛到一个顶层口子收起来的地方统一处理。另外有很多需要自定义异常的情况，就继承Exception。
+2. 对于受检异常，需要本地处理的就本地处理，需要抛出的就抛到顶层，Spring项目就写AOP切面统一处理，普通项目就抛到一个顶层口子收起来的地方统一处理。另外有很多需要自定义异常的情况，就继承Exception。注意打好日志。
 
 #### 出现了异常怎么保证资源正常关闭？
 
 1. 把异常catch住然后在finally块中关闭资源。
 2. 用try with resource的方式
 
-#### try catch finally的执行逻辑和return的逻辑
+#### try catch finally的执行逻辑和return的逻辑 
 
 https://blog.csdn.net/qq_40933663/article/details/88824391
 
@@ -110,7 +110,7 @@ https://zhuanlan.zhihu.com/p/78249480
 2. equals为true时，hashcode必须相同，而hashcode相同时，equals不一定为true
 3. hashcode只有在hashmap算hash位置的时候才会用到
 4. 自定义类作为key放入HashMap/HashSet时要重写equals和hashcode，避免出现两个对象内容相同，但内存地址不同，导致hashcode不同，从而在map中put(O1,value)之后，用map.get(O2)获取不到。
-5. 重写equals方法是必须重写hashcode方法，以避免在HashMap中出现两个equals比较相同的对象，却被hash到了两个不同的桶。
+5. 重写equals方法时必须重写hashcode方法，以避免在HashMap中出现两个equals比较相同的对象，却被hash到了两个不同的桶。
 
 #### static块，static属性，非static属性，构造函数，其他类实例的初始化顺序？
 
@@ -133,3 +133,20 @@ https://blog.csdn.net/java2000_wl/article/details/8015105
 #### object类有哪些方法
 
 https://blog.csdn.net/he6687086/article/details/94882098
+
+#### Java深拷贝浅拷贝
+
+https://segmentfault.com/a/1190000038523408
+
+#### 访问修饰符
+
+https://www.cnblogs.com/bandaobudaoweng/p/10804370.html，**关注clone方法**
+
+#### final的作用？final修饰数组，数组内的元素能否改变？
+
+https://www.cnblogs.com/xuelisheng/p/11158110.html，能
+
+#### 什么是反射？反射的原理？反射的应用场景？为什么用？
+
+
+
