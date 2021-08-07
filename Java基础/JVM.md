@@ -560,7 +560,7 @@ JDK9之前，Java保持三层类加载器的双亲委派的类加载架构，使
 ##### 如何破坏
 （1）继承ClassLoader  
 
-（2）重写findClass()方法  
+（2）重写loadClass()方法和findclass方法
 
 （3）调用defineClass()方法  
 
