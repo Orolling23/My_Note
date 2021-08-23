@@ -111,7 +111,7 @@ InnoDB中，意向锁比较简练，意向锁即为表级别的锁，设计目�
 
 非锁定读极大的提高了数据库的并发性，**是默认的读取方式**，在 READ COMMITTED 和 REPEATABLE READ 两个隔离级别下，InnoDB使用一致性非锁定读。在 READ COMMITTED 级别下，总是读取被锁定行的**最新一份**快照数据；REPEATABLE READ级别下，总是读取**事务开始时的那份**快照数据。    
 
-也就是说在READ COMMITTED 级别下，**每次读取都会创建一个新的ReadView**；REPEATABLE READ级别下，**同一个事务中的读取都在同一个ReadView中**
+也就是说在READ COMMITTED 级别下，**每次读取都会创建一个新的ReadView**；REPEATABLE READ级别下，**ReadView在事务开启时创建，同一个事务中的读取都在同一个ReadView中**
 
 ### 一致性锁定读
 一般，默认配置下，InnoDB引擎的事务隔离级别为REPEATABLE READ，采用一致性非锁定读。但某些特殊情况下，用户需要显式地对数据库读取操作进行加锁以保证数据逻辑的一致性。这时就需要数据库支持加锁语句。  
