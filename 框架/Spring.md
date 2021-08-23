@@ -39,11 +39,11 @@ IoC，即控制反转，是一种设计思想。在Spring中，IoC意味着将�
 
 传统程序设计如图2-1，都是主动去创建相关对象然后再组合起来：  
 
-![IoC前](/Users/zhangqi153/Documents/mypersonal/My_Note/Java基础/Pics/IoC前.jpg)  
+![IoC前](./Pics/IoC前.jpg)  
 
 当有了IoC/DI的容器后，在客户端类中不再主动去创建这些对象了，如图2-2所示:
 
-![IoC后](/Users/zhangqi153/Documents/mypersonal/My_Note/Java基础/Pics/IoC后.png)  
+![IoC后](./Pics/IoC后.png)  
 
 ### IoC能做什么
 
@@ -83,7 +83,7 @@ IoC是Spring的核心，对于Spring框架来说，**就是由Spring来负责控
 >https://www.zhihu.com/question/313785621  
 
 
-## 
+
 
 ## AOP
 AOP(Aspect-Oriented Programming：面向切面编程)能够将那些与业务无关，**却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性。**  
